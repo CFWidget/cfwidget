@@ -111,7 +111,7 @@ func ResolveProject(c *gin.Context) {
 		}
 	}
 
-	if path == "service-worker.js" {
+	if path == "service-worker.js" || path == "service-worker-dev.js" {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
