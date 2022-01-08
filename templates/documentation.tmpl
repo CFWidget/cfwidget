@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en_us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:700,900|Work+Sans|Roboto+Mono" rel="stylesheet">
+    <title>CFWidget</title>
+</head>
+<body class="w-100 bg-nearest-white work-sans lh-copy black-80">
+<div class="vh-95 dt center">
+    <div class="mw7 dtc v-mid ph4">
+        <div class="measure-wide">
+            <h1 class="ttu b montserrat fw9 lh-title">
+                <span class="curse-orange">CurseForge</span> Projects, Anywhere.
+            </h1>
+            <p>
+                Embed CurseForge project downloads anywhere on the web
+                using widgets, and access project information programmatically through
+                the JSON API to integrate automatic updates, content discovery and
+                more into your projects.
+            </p>
+            <p class="black-70">
+          <span class="roboto-mono b" id="requests-counter">
+            0</span><span class="gray" title="estimated">*
+          </span>
+                requests served since 2013.
+            </p>
+            <p class="mt4">
+                <a class="dib br4 bg-curse-orange white pv2 ph3 f6 link montserrat fw7" href="#notice">
+                    Create Widget
+                </a><span class="ml3">or
+          <a class="dib link gray ml1" href="#documentation:about">
+            View API Documentation &dtrif;
+          </a></span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="bg-curse-orange" id="notice">
+    <div class="mw7 ph3 pv4 center near-white">
+        <h2 class="ma0 mb2">Create a Widget</h2>
+        <p class="pa0 ma0">
+            Visit the www.curseforge.com page for a project and get the project's ID, e.g for
+            <a class="link b white" href="https://curseforge.com/minecraft/mc-mods/more-swords-mod">More Swords
+                Mod</a>
+            the path is
+            <code class="roboto-mono near-white bb bw1 pv1">59903</code>.
+        </p>
+        <p>
+            Embed a widget on the Minecraft Forum using the widget BBCode, which
+            accepts the project path and an optional version parameter.
+        </p>
+        <pre class="ma0 pa0 f6">[widget="1.6.4"]59903[/widget]</pre>
+        <p>
+            Embed a widget on the web using an iframe, which
+            accepts the project path and an optional version parameter.
+        </p>
+        <pre class="ma0 pa0 f6 overflow"
+             style="white-space: initial;">&lt;iframe src="https://www.cfwidget.com/59903?version=1.6.4" width="100%" style="border: none;"&gt;&lt;/iframe&gt;</pre>
+    </div>
+</div>
+<div class="measure-wide center pv3 mb5 ph4 ph0-l" id="documentation">
+    <h2 id="documentation:about">API</h2>
+    <p>
+        The CurseForge Widget API is available over https at
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">api.cfwidget.com</code>. Project details can be retrieved
+        by making a GET request to this endpoint where the path of your request is a current or legacy CurseForge
+        project path.
+    </p>
+    <p>
+        <code class="roboto-mono f6" style="word-break: break-all;">
+            <span class="b">GET</span> https://api.cfwidget.com/227724
+        </code>
+    <pre class="f6">
+{
+   "id": 227724,
+   "game": "Minecraft",
+   "type": "Modpacks",
+   "urls": {...},
+   "files": [...]
+   "downloads": {...},
+   "thumbnail": "...",
+   "categories": [...],
+   "created_at": "2015-02-10T18:10:29+00:00",
+   "description": "...",
+   "last_fetch": "2018-02-08T23:19:39+00:00",
+   "download": {...}
+}
+      </pre>
+    </p>
+    <p>
+        Author details can be retrieved by making a GET request to this endpoint where the path of your request is a
+        current or legacy CurseForge project path.
+    </p>
+    <p>
+        <code class="roboto-mono f6" style="word-break: break-all;">
+            <span class="b">GET</span> https://api.cfwidget.com/author/1234567
+            <span class="b">GET</span> https://api.cfwidget.com/author/search/MysticDrew
+        </code>
+    <pre class="f6">
+{
+    "projects": [
+        {
+            "id":32274,
+            "name":"JourneyMap"
+        },
+        {
+            "id":225341,
+            "name":"JourneyMap Server"
+        }
+    ],
+    "username":"Mysticdrew",
+    "id":9422784
+}
+      </pre>
+    </p>
+    <h2 id="documentation:version">Download</h2>
+    <p>
+        Each response includes a <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">download</code> object which
+        is
+        one of the files available on the project. By default the download
+        is the most recent file with a type of <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code>,
+        with a
+        fallback to <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code> and then <code
+                class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code> if no
+        acceptable file can be found.
+    </p>
+    <p>
+        An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> parameter can be included
+        when making a
+        request, this will determine which file is used as the download. You may
+        pass a version number, release type, file ID or a combination of version
+        number and release type. For example:
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">version=alpha</span>
+            Most recent file where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code> is equal to
+            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code>.
+        </li>
+        <li><span class="robot-mono b curse-orange">version=1.7.9</span>
+            Most recent file where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> is equal to
+            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">1.7.9</code>.
+        </li>
+        <li><span class="robot-mono b curse-orange">version=1.7.9/beta</span>
+            Most recent file where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> is equal to
+            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">1.7.9</code> and <code
+                    class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code> is equal to
+            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code>.
+        </li>
+        <li><span class="robot-mono b curse-orange">version=2288310</span>
+            File where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">id</code> is equal to <code
+                    class="roboto-mono bg-light-gray f6 ph2 pv1 br2">2288310</code>.
+        </li>
+    </ul>
+    <p>
+        When a request is made for a version that cannot be satisified the system
+        will fall back to providing the most recent file as the download,
+        <span class="b">except</span> when the version is a number and release
+        type, in that situation the system will try and satisfy the version number
+        alone before falling back to the most recent file.
+    </p>
+    <h2 id="documentation:responses">Responses</h2>
+    <p>
+        Each request response is a JSON document containing either project data or
+        an error.
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">200</span> Project found and
+            data included as the body of the response.
+        </li>
+        <li><span class="robot-mono b curse-orange">202</span> Path not found in
+            local database so it has been queued for processing. Retry request in a
+            few seconds.
+        </li>
+        <li><span class="robot-mono b curse-orange">301</span> Project is
+            available in database however the path used for the request is not the
+            canonical path. Retry request using the canonical path.
+        </li>
+        <li><span class="robot-mono b curse-orange">400</span> Path provided is
+            not a valid CurseForge path or a valid legacy curse.com project path.
+        </li>
+        <li><span class="robot-mono b curse-orange">404</span> Path is valid but
+            CurseForge responded that no project exists. This may be because no
+            project has ever lived at this path, or a project does but is hidden
+            from public view.
+        </li>
+        <li><span class="robot-mono b curse-orange">500</span> An unknown error
+            occurred processing your request.
+        </li>
+    </ul>
+    <h2 id="documentation:data">Project Data</h2>
+    <p>
+        Data is served from a local database which is populated by extracting data
+        from CurseForge project pages. Project data is kept fresh by
+        continually updating projects in order of most stale, allowing for
+        maximum data freshness given the resources available. A consumer can
+        determine data freshness using the last_fetch response value.
+    </p>
+    <p>
+    <h2 id="documentation:limits">Limits</h2>
+    <p>
+        Please be mindful that although there are no rate limits in place, this is
+        a service offered at no cost and as such has limited resources.
+        Aim to make no more than a few concurrent requests per second at peak, and
+        <a class="link curse-orange" href="#documentation:contact">get in touch</a>
+        to discuss options if you need to do anything heavier, as we may be able
+        to find a more suitable solution that protects the service reliability
+        while enabling your use case.
+    </p>
+    <h2 id="documentation:compatibility">Backwards Compatibility</h2>
+    <p>
+        During the many years this service has been operating it has been through
+        many iterations, some required by changes to CurseForge and others
+        required to ensure service reliability. Although the API is always
+        intended to be backwards compatible, there is the potential for breaking
+        changes when data we offer is no longer available through CurseForge. API
+        consumers should be mindful that it is possible that at some point in
+        future data you depend on now may no longer be available and should
+        integrate accordingly. For example, monthly download counts were removed
+        by CurseForge in November 2017.
+    </p>
+    <p>
+        From 2013 — 2017 this service was available at widget.mcf.li, with API
+        requests made by appending .json to widget URLs. Developers making use of
+        this old format are encouraged to update their integrations to make use of
+        the new request endpoint, however this is not required as the legacy
+        widget.mcf.li URLs redirect and will do so indefinitely.
+    </p>
+    <p>
+        From 2019, it served stale data due to the sell of MinecraftForum to MagicFind.
+        Since 2019, caching has also been implemented on top of the API. Calls to the API
+        will be cached for up to 2 minutes.
+    </p>
+    <p>
+        From 2020, the syncing process has been restored. However, not all data may be present
+        due to the change in APIs used to gather this data.
+        Following fields will no longer have accurate values due to the API changes:
+    <ul>
+        <li>File downloads</li>
+        <li>License</li>
+        <li>Donate</li>
+        <li>Versions will not provide Java version</li>
+    </ul>
+    New fields added:
+    <ul>
+        <li>Summary</li>
+        <li>File display name</li>
+    </ul>
+    </p>
+    <p>
+        As of April 11th, URLs which contain the Project ID in them (i.e /minecraft/mc-mods/12345)
+        will resolve to the proper ID. This was done to ensure that if we could not determine the path,
+        that there is always a way to do so.
+        Also, urls which use the legacy format (mc-mods/minecraft) will now redirect to the correct path
+        (minecraft/mc-mods).
+    </p>
+    <p>
+        As of January 1st, 2021, due to the transfer of CurseForge to Overwolf, the API will no longer be able to
+        resolve paths to projects that do not contain the ID. As a result of this change, the following URL formats
+        are the only ways to resolve a project.
+    <ul>
+        <li>/{game}/{type}/{id}-{name}</li>
+        <li>/{id}</li>
+    </ul>
+
+    Old URLs which were already resolved to a path will work as-is and will not change. New URLs without an ID
+    in the path will fail to resolve and return a 404.
+    </p>
+    <p>
+        As of December 1st, 2021, 2 new endpoints have been added. Both endpoints return the same JSON structure. The
+        new
+        endpoints allow for getting bare author information. This only includes their id, username, and associated
+        projects
+        that CFWidget is aware of. If a project is missing, then a call to /{projectId} should be made to add the
+        project
+        to the author's list.
+    <ul>
+        <li>/author/{id}</li>
+        <li>/author/search/{username}</li>
+    </ul>
+    <pre class="f6">
+{
+  "projects": [
+    {
+      "id": 32274,
+      "name": "JourneyMap"
+    },
+    {
+      "id": 233577,
+      "name": "AutoRun"
+    },
+    {
+      "id": 224460,
+      "name": "Enhanced Server Moderation"
+    },
+    {
+      "id": 225341,
+      "name": "JourneyMap Server"
+    }
+  ],
+  "username": "Mysticdrew",
+  "id": 9422784
+}
+      </pre>
+    </p>
+    <p>
+        As of January 1st, 2022, the backend has been rewritten to support scalability and future changes. There was no
+        changes to the API which would cause any forms of breaking, however functionality may feel different. Issues
+        should be reported.
+    </p>
+    <h2 id="documentation:contact">Contact</h2>
+    <p>
+        We now have a Discord! - <a href="https://discord.gg/FENdtjAJRF">https://discord.gg/FENdtjAJRF</a></p>
+    <p>You can also reach out via <a class="link curse-orange"
+                                     href="http://www.minecraftforum.net/private-messages/send?recipient=Lord_Ralex">
+            Private Message on minecraftforum.net</a> or email — admin@cfwidget.com</a>
+    </p>
+    <h2 id="privacy">Privacy</h2>
+    <p>
+        All traffic is routed through Cloudflare, which follows the <a class="link curse-orange"
+                                                                       href="https://www.cloudflare.com/privacypolicy/">
+            Cloudflare Privacy Policy.</a>
+        No identifiable information is logged or stored on the backend servers.
+    </p>
+</div>
+<script src="/js/app.js"></script>
+<script type="text/javascript">
+document.addEventListener('DOMContentLoaded', function () {
+  setInterval(function () {
+    let counter = document.getElementById('requests-counter')
+    let count = parseInt(counter.innerHTML.replace(/,/g, ''))
+    counter.innerHTML = (count + 1).toLocaleString()
+  }, (1000 / 3))
+})
+</script>
+</body>
+</html>

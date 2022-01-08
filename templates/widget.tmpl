@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en_us">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat:700,900|Work+Sans|Roboto+Mono" rel="stylesheet">
+    <title>{{ .title }}</title>
+</head>
+<body class="bg-transparent">
+<div id="widget">
+    <div class="wrapper clearfix">
+        <div class="thumb" style="background-image: url({{ .project.Thumbnail }});"></div>
+        <div class="meta">
+      <span class="line lead">
+      <a href="{{ .project.Urls.curseforge }}" title="{{ .project.Title }}" target="_blank" id="title-link">
+        {{ .project.Title }}
+      </a>
+      <small>by {{ (index .project.Members 0).Username }}</small>
+      </span>
+        {{ if .project.Download }}
+          <span class="line smaller">
+          Latest v{{ .project.Download.Version }} File:
+          <span class="file-name" title="{{ .project.Download.Name }}">
+          {{ .project.Download.Name }}
+          </span>
+            {{ if eq .project.Download.Type "alpha" }}
+                <span class="alpha">alpha!</span>
+            {{ else if eq .project.Download.Type "beta" }}
+                <span class="beta">beta!</span>
+            {{ end }}
+          </span>
+                <span class="line small">
+          {{ .downloadCount }} Downloads
+          </span>
+                <span class="line small">
+          {{ .project.Game }} v{{ .project.Download.Version }}
+          <span class="quiet">Uploaded {{ .project.Download.UploadedAt.Format "January 02 2006, 03:04pm" }}</span>
+          </span>
+            <div class="line bottom clearfix">
+                <a href="{{ .project.Download.Url }}" class="files-button" target="_blank" id="download-button">
+                    Download for {{ .project.Download.Version }}
+                </a>
+                <a href="{{ .project.Urls.curseforge }}/files" class="files-button" target="_blank" id="all-button">
+                    View all {{ len .project.Files }} downloads
+                </a>
+            </div>
+        {{ else }}
+            <!-- no download available -->
+            <div class="line bottom clearfix">
+                <a href="{{ .project.Urls.curseforge }}" class="files-button" target="_blank" id="all-button">
+                    View Project (no files available)
+                </a>
+            </div>
+        {{ end }}
+        </div>
+        <a class="about-widget" href="https://www.cfwidget.com" target="_blank" id="about-widget"
+           title="Learn more about widget">
+            &iquest;
+        </a>
+    </div>
+</div>
+</body>
