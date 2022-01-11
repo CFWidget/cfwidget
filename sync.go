@@ -9,12 +9,13 @@ import (
 	"github.com/spf13/cast"
 	"io"
 	"log"
+	"net/http"
 	"net/url"
 	"regexp"
 )
 
 var syncProjectConsumer SyncProjectConsumer
-var syncChan = make(chan uint)
+var syncChan = make(chan uint, 500)
 
 var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\"")
 
@@ -177,6 +178,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	s := string(d)
 	project.Properties = &s
 	project.ParsedProjects = newProps
+	project.Status = http.StatusOK
 
 	err = db.Save(project).Error
 	if err != nil {

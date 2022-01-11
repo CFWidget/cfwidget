@@ -34,6 +34,7 @@ func main() {
 	sqlDB.SetMaxIdleConns(10)
 	sqlDB.SetMaxOpenConns(100)
 	sqlDB.SetConnMaxLifetime(time.Hour)
+	db = db.Debug()
 
 	//run actual website
 	webServer := &http.Server{
@@ -74,7 +75,6 @@ func main() {
 	})
 
 	go func() {
-		//ScheduleProjects()
 		ticker := time.NewTicker(time.Minute)
 		for {
 			select {
@@ -83,8 +83,6 @@ func main() {
 			}
 		}
 	}()
-
-	//SyncProject(17618)
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

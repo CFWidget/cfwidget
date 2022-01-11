@@ -32,17 +32,7 @@ func RegisterApiRoutes(e *gin.Engine) {
 
 func MemCache(middleware ...gin.HandlerFunc) gin.HandlerFunc {
 	var store persistence.CacheStore
-	var err error
-
-	cacheLen := os.Getenv("CACHE_TTL")
-
-	cacheTtl := persistence.DEFAULT
-	if cacheLen != "" {
-		cacheTtl, err = time.ParseDuration(cacheLen)
-		if err != nil {
-			panic(err)
-		}
-	}
+	cacheTtl := getCacheTtl()
 
 	if os.Getenv("MEMCACHE_ENABLE") == "true" {
 		store = persistence.NewMemcachedBinaryStore(os.Getenv("MEMCACHE_HOST"), os.Getenv("MEMCACHE_USER"), os.Getenv("MEMCACHE_PASS"), cacheTtl)
@@ -58,7 +48,7 @@ func MemCache(middleware ...gin.HandlerFunc) gin.HandlerFunc {
 }
 
 func BrowserCache(c *gin.Context) {
-	c.Header("Cache-Control", "max-age=60")
+	c.Header("Cache-Control", fmt.Sprintf("max-age=%.0f", getCacheTtl().Seconds()))
 }
 
 func runHandlers(middleware ...gin.HandlerFunc) gin.HandlerFunc {
@@ -70,6 +60,21 @@ func runHandlers(middleware ...gin.HandlerFunc) gin.HandlerFunc {
 			}
 		}
 	}
+}
+
+func getCacheTtl() time.Duration {
+	var err error
+	cacheLen := os.Getenv("CACHE_TTL")
+
+	cacheTtl := persistence.DEFAULT
+	if cacheLen != "" {
+		cacheTtl, err = time.ParseDuration(cacheLen)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return cacheTtl
 }
 
 func ResolveProject(c *gin.Context) {
@@ -123,26 +128,28 @@ func ResolveProject(c *gin.Context) {
 	if id, err = cast.ToUintE(path); err == nil {
 		//the url is actually the id, so i can provide the JSON directly
 		//this also fixes the author endpoint when you query with that ID
-		err = db.Where("curse_id = ?", id).Find(&project).Error
+		err = db.Where("curse_id = ?", id).Limit(1).Find(&project).Error
 	} else {
 		//the path given is just a path, we need to resolve it to a project
 		err = db.Where("path = ?", path).Find(&project).Error
 	}
 
 	//if the record doesn't exist, queue it to be located
-	if err == gorm.ErrRecordNotFound {
+	if err == gorm.ErrRecordNotFound || project.ID == 0 {
 		//create the record directly, then submit to processor
 		project = &widget.Project{
-			Path:   path,
-			Status: http.StatusOK,
+			Path:    path,
+			Status:  http.StatusAccepted,
+			CurseId: nil,
 		}
 
-		err = db.Save(&project).Error
+		err = db.Create(&project).Error
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 			return
 		}
 
+		addChan <- path
 		c.AbortWithStatusJSON(http.StatusOK, ApiWebResponse{Accepted: true})
 		return
 	}
@@ -159,11 +166,14 @@ func ResolveProject(c *gin.Context) {
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
+	case 301:
+		fallthrough
 	case 302:
 		{
 			//this project is actually pointing elsewhere, we need to find the correct one instead
-			err = db.Where("curse_id = ? AND status = 200", project.CurseId).Find(&project).Error
-			if err == gorm.ErrRecordNotFound {
+			redirect := &widget.Project{}
+			err = db.Where("curse_id = ? AND status = 200", project.CurseId).First(&redirect).Error
+			if err == gorm.ErrRecordNotFound || redirect.ID == 0 {
 				//uh........ how can we have a project redirect but no other project.....
 				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: "project indicates redirect but none found"})
 				return
@@ -172,6 +182,7 @@ func ResolveProject(c *gin.Context) {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 				return
 			}
+			c.Set("project", redirect)
 		}
 	case 200:
 		c.Set("project", project)

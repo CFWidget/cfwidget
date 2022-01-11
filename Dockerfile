@@ -16,7 +16,8 @@ ENV REDIS_HOST="redis:6379" \
     DB_HOST="" \
     DB_USER="" \
     DB_PASS="" \
-    DB_DATABASE=""
+    DB_DATABASE="" \
+    CACHE_TTL="5m"
 
 ENTRYPOINT ["/go/bin/cfwidget"]
 CMD [""]
