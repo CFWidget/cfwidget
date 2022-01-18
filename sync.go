@@ -17,7 +17,11 @@ import (
 var syncProjectConsumer SyncProjectConsumer
 var syncChan = make(chan uint, 500)
 
+var gameCache = make(map[uint]curseforge.Game)
+var categoryCache = make(map[uint][]curseforge.Category)
+
 var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\"")
+var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
 
 func ScheduleProjects() {
 	var projects []uint
@@ -30,9 +34,6 @@ func ScheduleProjects() {
 	for _, v := range projects {
 		//kick off a worker to handle this
 		syncChan <- v
-		if err != nil {
-			log.Printf("Failed to queue %d for syncing: %s", v, err)
-		}
 	}
 }
 
@@ -87,11 +88,11 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		Title:       addon.Name,
 		Summary:     addon.Summary,
 		Description: description,
-		Game:        addon.GameSlug,
-		Type:        addon.CategorySection.Name,
+		Game:        gameCache[addon.GameId].Slug,
+		Type:        "",
 		Urls: map[string]string{
-			"curseforge": addon.WebsiteUrl,
-			"project":    addon.WebsiteUrl,
+			"curseforge": addon.Links.WebsiteUrl,
+			"project":    addon.Links.WebsiteUrl,
 		},
 		CreatedAt: addon.DateCreated,
 		Downloads: map[string]uint64{
@@ -111,19 +112,23 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		newProps.Categories = append(newProps.Categories, v.Name)
 	}
 
-	var thumbnail string
-	for _, v := range addon.Attachments {
-		if v.IsDefault {
-			thumbnail = v.ThumbnailUrl
-		}
-	}
-	newProps.Thumbnail = thumbnail
+	categories := getCategories(addon.GameId)
+	newProps.Type = getPrimaryCategoryFor(categories, addon.PrimaryCategoryId).Name
+
+	newProps.Thumbnail = addon.Logo.ThumbnailUrl
 
 	for _, v := range addon.Authors {
+		var authorId uint
+
+		urls := authorIdRegex.FindStringSubmatch(v.Url)
+		if len(urls) < 2 {
+			authorId = v.Id
+		}
+		authorId = cast.ToUint(urls[1])
 		newProps.Members = append(newProps.Members, widget.ProjectMember{
 			Username: v.Name,
-			Title:    coalesce(v.ProjectTitleTitle, "Owner"),
-			Id:       v.UserId,
+			Title:    coalesce("Owner"),
+			Id:       authorId,
 		})
 	}
 
@@ -142,13 +147,13 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 
 		file := widget.ProjectFile{
 			Id:         v.Id,
-			Url:        fmt.Sprintf("%s/files/%d", addon.WebsiteUrl, v.Id),
+			Url:        fmt.Sprintf("%s/files/%d", addon.Links.WebsiteUrl, v.Id),
 			Display:    v.DisplayName,
 			Name:       v.FileName,
 			Type:       curseforge.GetReleaseType(v.ReleaseType),
-			Version:    firstOrEmpty(v.GameVersion),
+			Version:    firstOrEmpty(v.GameVersions),
 			FileSize:   v.FileLength,
-			Versions:   v.GameVersion,
+			Versions:   v.GameVersions,
 			Downloads:  v.DownloadCount,
 			UploadedAt: v.FileDate,
 		}
@@ -187,70 +192,67 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 }
 
 func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
-	url := fmt.Sprintf("https://addons-ecs.forgesvc.net/api/v2/addon/%d", id)
+	url := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d", id)
 
-	response, err := client.Get(url)
+	response, err := callCurseForgeAPI(url)
 	if err != nil {
 		return
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		//we have a bad status from curseforge.... we probably should just skip and move on
-		var data []byte
-		data, err = io.ReadAll(response.Body)
-		if err != nil {
-			return
-		}
-
-		return addon, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(data), response.StatusCode))
+		body, _ := io.ReadAll(response.Body)
+		return addon, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
 
-	err = json.NewDecoder(response.Body).Decode(&addon)
+	var res curseforge.ProjectResponse
+	err = json.NewDecoder(response.Body).Decode(&res)
+	addon = res.Data
 	return
 }
 
 func getAddonFiles(id uint) (files []curseforge.File, err error) {
-	url := fmt.Sprintf("https://addons-ecs.forgesvc.net/api/v2/addon/%d/files", id)
+	url := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
 
-	response, err := client.Get(url)
+	response, err := callCurseForgeAPI(url)
 	if err != nil {
 		return
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		//we have a bad status from curseforge.... we probably should just skip and move on
-		var data []byte
-		data, err = io.ReadAll(response.Body)
-		if err != nil {
-			return
-		}
-
-		return files, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(data), response.StatusCode))
+		body, _ := io.ReadAll(response.Body)
+		return files, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
 
-	err = json.NewDecoder(response.Body).Decode(&files)
+	var res curseforge.FilesResponse
+
+	err = json.NewDecoder(response.Body).Decode(&res)
+	files = res.Data
 	return
 }
 
 func getAddonDescription(id uint) (description string, err error) {
-	requestUrl := fmt.Sprintf("https://addons-ecs.forgesvc.net/api/v2/addon/%d/description", id)
+	requestUrl := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/description", id)
 
-	response, err := client.Get(requestUrl)
+	response, err := callCurseForgeAPI(requestUrl)
 	if err != nil {
 		return
 	}
 	defer response.Body.Close()
 
-	var data []byte
-	data, err = io.ReadAll(response.Body)
-
 	if response.StatusCode != 200 {
-		return description, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(data), response.StatusCode))
+		body, _ := io.ReadAll(response.Body)
+		return description, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
 
-	description = remoteUrlRegex.ReplaceAllStringFunc(string(data), func(match string) string {
+	var data curseforge.DescriptionResponse
+	err = json.NewDecoder(response.Body).Decode(&data)
+	if err != nil {
+		return
+	}
+
+	description = remoteUrlRegex.ReplaceAllStringFunc(data.Data, func(match string) string {
 		urls := remoteUrlRegex.FindStringSubmatch(match)
 		if len(urls) < 2 {
 			return match
@@ -260,6 +262,65 @@ func getAddonDescription(id uint) (description string, err error) {
 		result, err = url.QueryUnescape(result)
 		return "\"" + result + "\""
 	})
-
 	return
+}
+
+func updateGameCache() {
+	response, err := callCurseForgeAPI("https://api.curseforge.com/v1/games")
+	if err != nil {
+		fmt.Printf("Error syncing game cache: %s", err.Error())
+		return
+	}
+	defer response.Body.Close()
+
+	var data curseforge.GameResponse
+	err = json.NewDecoder(response.Body).Decode(&data)
+	if err != nil {
+		fmt.Printf("Error syncing game cache: %s", err.Error())
+		return
+	}
+
+	newMap := make(map[uint]curseforge.Game)
+	for _, v := range data.Data {
+		newMap[v.Id] = v
+	}
+	gameCache = newMap
+}
+
+func getCategories(gameId uint) []curseforge.Category {
+	if categories, exists := categoryCache[gameId]; exists {
+		return categories
+	}
+
+	var data curseforge.CategoryResponse
+	response, err := callCurseForgeAPI(fmt.Sprintf("https://api.curseforge.com/v1/categories?gameId=%d&pageSize=1000", gameId))
+	if err != nil {
+		fmt.Printf("Error getting categories for %d: %s", gameId, err.Error())
+		return make([]curseforge.Category, 0)
+	}
+	defer response.Body.Close()
+
+	err = json.NewDecoder(response.Body).Decode(&data)
+	if err != nil {
+		fmt.Printf("Error getting categories for %d: %s", gameId, err.Error())
+		return make([]curseforge.Category, 0)
+	}
+	categoryCache[gameId] = data.Data
+	return data.Data
+}
+
+func getPrimaryCategoryFor(categories []curseforge.Category, id uint) curseforge.Category {
+	for _, v := range categories {
+		if v.Id == id {
+			//if this is the highest, this is what we want
+			if v.ParentCategoryId == 0 {
+				return v
+			}
+
+			//otherwise... we need to see the parent of this one
+			return getPrimaryCategoryFor(categories, v.ParentCategoryId)
+		}
+	}
+
+	return curseforge.Category{}
 }

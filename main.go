@@ -43,6 +43,8 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	updateGameCache()
+
 	g.Go(func() error {
 		web := gin.New()
 		web.Use(gin.Recovery())
@@ -79,10 +81,22 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				//ScheduleProjects()
+				ScheduleProjects()
 			}
 		}
 	}()
+
+	go func() {
+		ticker := time.NewTicker(time.Hour)
+		for {
+			select {
+			case <-ticker.C:
+				updateGameCache()
+			}
+		}
+	}()
+
+	//SyncProject(17618)
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

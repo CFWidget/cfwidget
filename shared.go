@@ -1,8 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"gorm.io/gorm"
 	"net/http"
+	"net/url"
+	"os"
 )
 
 var db *gorm.DB
@@ -26,4 +29,24 @@ func firstOr(data []string, def string) string {
 		return def
 	}
 	return data[0]
+}
+
+func callCurseForgeAPI(u string) (*http.Response, error) {
+	key := os.Getenv("CORE_KEY")
+
+	path, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	request := &http.Request{
+		Method: "GET",
+		URL:    path,
+		Header: http.Header{},
+	}
+	request.Header.Add("x-api-key", key)
+
+	fmt.Printf("Calling %s\n", path.String())
+
+	return client.Do(request)
 }
