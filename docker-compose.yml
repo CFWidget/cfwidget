@@ -1,0 +1,40 @@
+version: "3.3"
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    depends_on:
+      - database
+      - memcache
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      DB_USER: widget
+      DB_PASS: widget
+      DB_HOST: database
+      DB_DATABASE: widget
+      GIN_MODE: release
+      DEBUG: "false"
+      CORE_KEY: "${CORE_KEY}"
+      MEMCACHE_ENABLE: "true"
+      MEMCACHE_HOST: memcache
+      WEB_HOSTNAME: "dev.www.cfwidget.com"
+  database:
+    image: mariadb
+    restart: always
+    environment:
+      MYSQL_USER: widget
+      MYSQL_PASSWORD: widget
+      MYSQL_DATABASE: widget
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+    volumes:
+      - "dbdata:/var/lib/mysql"
+  memcache:
+    image: memcached
+    restart: always
+    command: ["-m", "64m"]
+
+volumes:
+  dbdata:

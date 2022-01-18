@@ -11,7 +11,9 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
+	"time"
 )
 
 var syncProjectConsumer SyncProjectConsumer
@@ -25,7 +27,7 @@ var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(
 
 func ScheduleProjects() {
 	var projects []uint
-	err := db.Model(&widget.Project{}).Where("status = ?", 200).Select("id").Order("updated_at ASC").Limit(100).Find(&projects).Error
+	err := db.Model(&widget.Project{}).Where("status = ? AND updated_at < ?", 200, time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(100).Find(&projects).Error
 	if err != nil {
 		log.Printf("Failed to pull projects to sync: %s", err)
 		return
@@ -62,7 +64,9 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	}()
 
 	// perform task
-	log.Printf("Syncing project %d", id)
+	if os.Getenv("DEBUG") == "true" {
+		log.Printf("Syncing project %d", id)
+	}
 
 	project := &widget.Project{}
 	err := db.First(&project, id).Error
@@ -268,7 +272,7 @@ func getAddonDescription(id uint) (description string, err error) {
 func updateGameCache() {
 	response, err := callCurseForgeAPI("https://api.curseforge.com/v1/games")
 	if err != nil {
-		fmt.Printf("Error syncing game cache: %s", err.Error())
+		log.Printf("Error syncing game cache: %s", err.Error())
 		return
 	}
 	defer response.Body.Close()
@@ -276,7 +280,7 @@ func updateGameCache() {
 	var data curseforge.GameResponse
 	err = json.NewDecoder(response.Body).Decode(&data)
 	if err != nil {
-		fmt.Printf("Error syncing game cache: %s", err.Error())
+		log.Printf("Error syncing game cache: %s", err.Error())
 		return
 	}
 
@@ -295,14 +299,14 @@ func getCategories(gameId uint) []curseforge.Category {
 	var data curseforge.CategoryResponse
 	response, err := callCurseForgeAPI(fmt.Sprintf("https://api.curseforge.com/v1/categories?gameId=%d&pageSize=1000", gameId))
 	if err != nil {
-		fmt.Printf("Error getting categories for %d: %s", gameId, err.Error())
+		log.Printf("Error getting categories for %d: %s", gameId, err.Error())
 		return make([]curseforge.Category, 0)
 	}
 	defer response.Body.Close()
 
 	err = json.NewDecoder(response.Body).Decode(&data)
 	if err != nil {
-		fmt.Printf("Error getting categories for %d: %s", gameId, err.Error())
+		log.Printf("Error getting categories for %d: %s", gameId, err.Error())
 		return make([]curseforge.Category, 0)
 	}
 	categoryCache[gameId] = data.Data

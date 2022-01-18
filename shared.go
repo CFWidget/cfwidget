@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"gorm.io/gorm"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -46,7 +46,9 @@ func callCurseForgeAPI(u string) (*http.Response, error) {
 	}
 	request.Header.Add("x-api-key", key)
 
-	fmt.Printf("Calling %s\n", path.String())
+	if os.Getenv("DEBUG") == "true" {
+		log.Printf("Calling %s\n", path.String())
+	}
 
 	return client.Do(request)
 }
