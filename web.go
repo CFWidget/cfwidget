@@ -121,6 +121,78 @@ func ResolveProject(c *gin.Context) {
 		return
 	}
 
+	if strings.HasPrefix(path, "authors/") {
+
+	} else {
+		handleResolveProject(c, path)
+	}
+}
+
+func GetProject(c *gin.Context) {
+	obj, exists := c.Get("project")
+	if !exists {
+		return
+	}
+
+	project := obj.(*widget.Project)
+	properties := project.ParsedProjects
+
+	versionRequest := c.Query("version")
+
+	var latest widget.ProjectFile
+	for _, v := range properties.Files {
+		if v.UploadedAt.After(latest.UploadedAt) {
+			if versionRequest == "" {
+				latest = v
+			} else if versionRequest == cast.ToString(v.Id) {
+				latest = v
+			} else if versionRequest == v.Type {
+				latest = v
+			} else {
+				for _, y := range v.Versions {
+					if versionRequest == y {
+						latest = v
+						break
+					} else if versionRequest == fmt.Sprintf("%s/%s", y, v.Type) {
+						latest = v
+					}
+				}
+			}
+		}
+	}
+
+	if latest.Id != 0 {
+		properties.Download = &latest
+	}
+
+	//if this is not the web side of the fence, redirect to the web side of the fence
+	if c.Request.Host != os.Getenv("WEB_HOSTNAME") {
+		c.JSON(project.Status, properties)
+	} else {
+		//otherwise, render our documentation
+		//this is for HTTP2 support, which can pre-load files for the client
+		if pusher := c.Writer.Pusher(); pusher != nil {
+			// use pusher.Push() to do server push
+			if err := pusher.Push("/css/app.css", nil); err != nil {
+				log.Printf("Failed to push: %v", err)
+			}
+			if err := pusher.Push("/js/app.js", nil); err != nil {
+				log.Printf("Failed to push: %v", err)
+			}
+		}
+
+		p := message.NewPrinter(language.English)
+		downloads := p.Sprintf("%d\n", properties.Downloads["total"])
+
+		c.HTML(http.StatusOK, "widget.tmpl", gin.H{
+			"project":       properties,
+			"downloadCount": downloads,
+		})
+	}
+	c.Abort()
+}
+
+func handleResolveProject(c *gin.Context, path string) {
 	project := &widget.Project{}
 	var err error
 	var id uint
@@ -193,44 +265,6 @@ func ResolveProject(c *gin.Context) {
 	}
 }
 
-func GetProject(c *gin.Context) {
-	obj, _ := c.Get("project")
-	project := obj.(*widget.Project)
-	properties := project.ParsedProjects
+func handleResolveAuthor(c *gin.Context, path string) {
 
-	var latest widget.ProjectFile
-	for _, v := range properties.Files {
-		if v.UploadedAt.After(latest.UploadedAt) {
-			latest = v
-		}
-	}
-
-	if latest.Id != 0 {
-		properties.Download = &latest
-	}
-
-	//if this is not the web side of the fence, redirect to the web side of the fence
-	if c.Request.Host != os.Getenv("WEB_HOSTNAME") {
-		c.JSON(project.Status, properties)
-	} else {
-		//otherwise, render our documentation
-		//this is for HTTP2 support, which can pre-load files for the client
-		if pusher := c.Writer.Pusher(); pusher != nil {
-			// use pusher.Push() to do server push
-			if err := pusher.Push("/css/app.css", nil); err != nil {
-				log.Printf("Failed to push: %v", err)
-			}
-			if err := pusher.Push("/js/app.js", nil); err != nil {
-				log.Printf("Failed to push: %v", err)
-			}
-		}
-
-		p := message.NewPrinter(language.English)
-		downloads := p.Sprintf("%d\n", properties.Downloads["total"])
-
-		c.HTML(http.StatusOK, "widget.tmpl", gin.H{
-			"project":       properties,
-			"downloadCount": downloads,
-		})
-	}
 }
