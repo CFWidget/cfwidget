@@ -1,6 +1,6 @@
-version: "3.3"
+version: "3.4"
 services:
-  webapp:
+  cfwidget:
     build:
       context: .
       dockerfile: Dockerfile
@@ -8,8 +8,6 @@ services:
     depends_on:
       - database
       - memcache
-    ports:
-      - "127.0.0.1:8080:8080"
     environment:
       DB_USER: widget
       DB_PASS: widget
@@ -20,7 +18,12 @@ services:
       CORE_KEY: "${CORE_KEY}"
       MEMCACHE_ENABLE: "true"
       MEMCACHE_HOST: memcache
-      WEB_HOSTNAME: "dev.www.cfwidget.com"
+      WEB_HOSTNAME: "${WEB_HOST}"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`)"
+      - "traefik.http.routers.cfwidget.entrypoints=websecure"
+      - "traefik.http.routers.cfwidget.tls.certresolver=myresolver"
   database:
     image: mariadb
     restart: always
@@ -31,10 +34,37 @@ services:
       MYSQL_RANDOM_ROOT_PASSWORD: "true"
     volumes:
       - "dbdata:/var/lib/mysql"
+
   memcache:
     image: memcached
     restart: always
     command: ["-m", "64m"]
+  traefik:
+    image: "traefik:v2.5"
+    depends_on:
+      - cfwidget
+    command:
+      - "--log.level=debug"
+      #- "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.email=${EMAIL_ACME}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      #- "--certificatesresolvers.myresolver.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+    ports:
+      - "80:80"
+      - "443:443"
+      #- "8080:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "traefik:/letsencrypt"
 
 volumes:
   dbdata:
+  traefik:
