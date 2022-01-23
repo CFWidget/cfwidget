@@ -44,7 +44,7 @@ services:
     depends_on:
       - cfwidget
     command:
-      - "--log.level=debug"
+      #- "--log.level=debug"
       #- "--api.insecure=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
