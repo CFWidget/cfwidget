@@ -53,7 +53,7 @@ type ProjectProperties struct {
 	Links       []string                 `json:"links"`
 	Files       []ProjectFile            `json:"files"`
 	Versions    map[string][]ProjectFile `json:"versions"`
-	Download    *ProjectFile              `json:"download,omitempty"`
+	Download    *ProjectFile             `json:"download,omitempty"`
 }
 
 type ProjectMember struct {
@@ -73,4 +73,42 @@ type ProjectFile struct {
 	Versions   []string  `json:"versions"`
 	Downloads  uint      `json:"downloads"`
 	UploadedAt time.Time `json:"uploaded_at"`
+}
+
+type Author struct {
+	Id         uint
+	Username   string
+	Properties *string
+	MemberId   uint
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+
+	ParsedProjects AuthorProperties `gorm:"-"`
+}
+
+func (a *Author) AfterFind(*gorm.DB) error {
+	if a.Properties == nil {
+		return nil
+	}
+
+	//for some things, we have a broken JSON due to issues with the data
+	//In some scenarios, PHP made arrays for maps when no data, so Go cannot parse this properly
+	//As such, we simply ignore errors.
+	//These will return no data at the end until it's re-synced
+	return json.NewDecoder(strings.NewReader(*a.Properties)).Decode(&a.ParsedProjects)
+}
+
+type AuthorProperties struct {
+	Projects []AuthorProjects
+}
+
+type AuthorProjects struct {
+	Id   uint
+	Name string
+}
+
+type AuthorResponse struct {
+	Id       uint             `json:"id"`
+	Username string           `json:"username"`
+	Projects []AuthorProjects `json:"projects"`
 }

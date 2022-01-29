@@ -24,6 +24,9 @@ services:
       - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`)"
       - "traefik.http.routers.cfwidget.entrypoints=websecure"
       - "traefik.http.routers.cfwidget.tls.certresolver=myresolver"
+    volumes:
+      - "logs:/logs"
+
   database:
     image: mariadb
     restart: always
@@ -68,3 +71,4 @@ services:
 volumes:
   dbdata:
   traefik:
+  logs:

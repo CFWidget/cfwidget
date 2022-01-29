@@ -24,10 +24,12 @@ type ApiWebResponse struct {
 
 var AllowedFiles = []string{"js/app.js", "favicon.ico", "css/app.css"}
 
+const AuthorPath = "author/"
+
 func RegisterApiRoutes(e *gin.Engine) {
 	e.LoadHTMLGlob("templates/*.tmpl")
 
-	e.GET("/*projectPath", MemCache(ResolveProject, BrowserCache, GetProject))
+	e.GET("/*projectPath", MemCache(Resolve, BrowserCache, GetAuthor, GetProject))
 }
 
 func MemCache(middleware ...gin.HandlerFunc) gin.HandlerFunc {
@@ -77,7 +79,7 @@ func getCacheTtl() time.Duration {
 	return cacheTtl
 }
 
-func ResolveProject(c *gin.Context) {
+func Resolve(c *gin.Context) {
 	path := strings.TrimPrefix(c.Param("projectPath"), "/")
 
 	if path == "" {
@@ -121,8 +123,8 @@ func ResolveProject(c *gin.Context) {
 		return
 	}
 
-	if strings.HasPrefix(path, "authors/") {
-
+	if strings.HasPrefix(path, AuthorPath) {
+		handleResolveAuthor(c, strings.TrimPrefix(path, AuthorPath))
 	} else {
 		handleResolveProject(c, path)
 	}
@@ -190,6 +192,21 @@ func GetProject(c *gin.Context) {
 		})
 	}
 	c.Abort()
+}
+
+func GetAuthor(c *gin.Context) {
+	obj, exists := c.Get("author")
+	if !exists {
+		return
+	}
+
+	author := obj.(*widget.Author)
+
+	c.JSON(http.StatusOK, widget.AuthorResponse{
+		Id:       author.MemberId,
+		Username: author.Username,
+		Projects: author.ParsedProjects.Projects,
+	})
 }
 
 func handleResolveProject(c *gin.Context, path string) {
@@ -266,5 +283,26 @@ func handleResolveProject(c *gin.Context, path string) {
 }
 
 func handleResolveAuthor(c *gin.Context, path string) {
+	author := &widget.Author{}
+	var err error
 
+	if strings.HasPrefix(path, "search/") {
+		username := strings.TrimPrefix(path, "search/")
+		err = db.Where("username = ?", username).First(&author).Error
+	} else {
+		var id uint
+		id, err = cast.ToUintE(path)
+		if err != nil {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
+		}
+		err = db.Where("member_id = ?", id).First(&author).Error
+	}
+
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
+		return
+	}
+
+	c.Set("author", author)
 }
