@@ -26,8 +26,14 @@ var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\""
 var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
 
 func ScheduleProjects() {
+	db, err := GetDatabase()
+	if err != nil {
+		log.Printf("Failed to pull projects to sync: %s", err)
+		return
+	}
+
 	var projects []uint
-	err := db.Model(&widget.Project{}).Where("status = ? AND updated_at < ?", 200, time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(100).Find(&projects).Error
+	err = db.Model(&widget.Project{}).Where("status = ? AND updated_at < ?", 200, time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(100).Find(&projects).Error
 	if err != nil {
 		log.Printf("Failed to pull projects to sync: %s", err)
 		return
@@ -63,13 +69,18 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		}
 	}()
 
+	db, err := GetDatabase()
+	if err != nil {
+		panic(err)
+	}
+
 	// perform task
 	if os.Getenv("DEBUG") == "true" {
 		log.Printf("Syncing project %d", id)
 	}
 
 	project := &widget.Project{}
-	err := db.First(&project, id).Error
+	err = db.First(&project, id).Error
 	if err != nil {
 		panic(err)
 	}

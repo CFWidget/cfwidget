@@ -27,7 +27,11 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 	log.Printf("Resolving path %s", url)
 
 	var curseId uint
-	var err error
+
+	db, err := GetDatabase()
+	if err != nil {
+		panic(err)
+	}
 
 	project := &widget.Project{}
 	err = db.Where("path = ?", url).Find(&project).Error

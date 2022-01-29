@@ -5,10 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/lordralex/cfwidget/widget"
 	"golang.org/x/sync/errgroup"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"os"
@@ -22,31 +19,6 @@ var g errgroup.Group
 func main() {
 	if os.Getenv("CORE_KEY") == "" || os.Getenv("CORE_KEY") == "${CORE_KEY}" {
 		panic(errors.New("CORE_KEY MUST BE DEFINED"))
-	}
-
-	var err error
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE"))
-
-	log.Printf("Connecting to database: %s\n", os.Getenv("DB_HOST"))
-	db, err = gorm.Open(mysql.Open(dsn))
-	if err != nil {
-		log.Fatal(err)
-	}
-	sqlDB, err := db.DB()
-	if err != nil {
-		log.Fatal(err)
-	}
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
-
-	if os.Getenv("DEBUG") == "true" {
-		db = db.Debug()
-	}
-
-	err = db.AutoMigrate(&widget.Project{})
-	if err != nil {
-		panic(err)
 	}
 
 	//run actual website
@@ -118,7 +90,7 @@ func main() {
 
 	shutdownServer(webServer)
 
-	if err = g.Wait(); err != nil {
+	if err := g.Wait(); err != nil {
 		log.Fatal(err)
 	}
 }

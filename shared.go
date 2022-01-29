@@ -1,14 +1,12 @@
 package main
 
 import (
-	"gorm.io/gorm"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 )
 
-var db *gorm.DB
 var client = &http.Client{}
 
 func coalesce(options ...string) string {

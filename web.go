@@ -210,8 +210,13 @@ func GetAuthor(c *gin.Context) {
 }
 
 func handleResolveProject(c *gin.Context, path string) {
+	db, err := GetDatabase()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
+		return
+	}
+
 	project := &widget.Project{}
-	var err error
 	var id uint
 
 	if id, err = cast.ToUintE(path); err == nil {
@@ -283,8 +288,13 @@ func handleResolveProject(c *gin.Context, path string) {
 }
 
 func handleResolveAuthor(c *gin.Context, path string) {
+	db, err := GetDatabase()
+	if err != nil {
+		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
+		return
+	}
+
 	author := &widget.Author{}
-	var err error
 
 	if strings.HasPrefix(path, "search/") {
 		username := strings.TrimPrefix(path, "search/")
