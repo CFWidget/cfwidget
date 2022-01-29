@@ -8,13 +8,13 @@ import (
 )
 
 type Project struct {
-	ID         uint `gorm:"primaryKey"`
-	CurseId    *uint
-	Path       string
+	ID         uint   `gorm:"primaryKey"`
+	CurseId    *uint  `gorm:"index"`
+	Path       string `gorm:"index"`
 	Properties *string
 	Status     int
 	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	UpdatedAt  time.Time `gorm:"index"`
 
 	ParsedProjects ProjectProperties `gorm:"-"`
 }
@@ -76,12 +76,12 @@ type ProjectFile struct {
 }
 
 type Author struct {
-	Id         uint
-	Username   string
+	Id         uint   `gorm:"primaryKey"`
+	Username   string `gorm:"index"`
 	Properties *string
-	MemberId   uint
+	MemberId   uint `gorm:"index"`
 	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	UpdatedAt  time.Time `gorm:"index"`
 
 	ParsedProjects AuthorProperties `gorm:"-"`
 }

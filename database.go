@@ -44,7 +44,7 @@ func GetDatabase() (*gorm.DB, error) {
 			db = db.Debug()
 		}
 
-		err = db.AutoMigrate(&widget.Project{})
+		err = db.AutoMigrate(&widget.Project{}, &widget.Author{})
 		if err != nil {
 			log.Printf("Error connecting to database: %s", err.Error())
 			return nil, err
