@@ -35,7 +35,6 @@ func main() {
 		web.Use(gin.Recovery())
 		web.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 			if param.Latency > time.Minute {
-				// Truncate in a golang < 1.8 safe way
 				param.Latency = param.Latency - param.Latency%time.Second
 			}
 
@@ -67,6 +66,18 @@ func main() {
 			select {
 			case <-ticker.C:
 				ScheduleProjects()
+			}
+		}
+	}()
+
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+
+		ScheduleAuthors()
+		for {
+			select {
+			case <-ticker.C:
+				ScheduleAuthors()
 			}
 		}
 	}()

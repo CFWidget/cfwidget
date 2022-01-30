@@ -7,6 +7,7 @@ import (
 	"github.com/lordralex/cfwidget/curseforge"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
+	"gorm.io/gorm"
 	"io"
 	"log"
 	"net/http"
@@ -204,6 +205,50 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	if err != nil {
 		panic(err)
 	}
+
+	//now, update authors to indicate this project is associated with them
+	for _, a := range project.ParsedProjects.Members {
+		var author widget.Author
+		err = db.Where("member_id = ?", a.Id).First(&author).Error
+		if err != nil && err != gorm.ErrRecordNotFound {
+			panic(err)
+		} else if err == gorm.ErrRecordNotFound {
+			author.Username = a.Username
+			author.MemberId = a.Id
+			temp := "{}"
+			author.Properties = &temp
+			err = db.Create(&author).Error
+			if err != nil {
+				panic(err)
+			}
+		}
+		exists := false
+		for _, e := range author.ParsedProjects.Projects {
+			if e.Id == *project.CurseId {
+				exists = true
+				break
+			}
+		}
+		if !exists {
+			author.ParsedProjects.Projects = append(author.ParsedProjects.Projects, widget.AuthorProject{
+				Id:   *project.CurseId,
+				Name: project.ParsedProjects.Title,
+			})
+
+			d, err = json.Marshal(author.ParsedProjects)
+			if err != nil {
+				panic(err)
+			}
+
+			s = string(d)
+			author.Properties = &s
+
+			err = db.Save(&author).Error
+			if err != nil {
+				panic(err)
+			}
+		}
+	}
 }
 
 func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
@@ -227,9 +272,9 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 }
 
 func getAddonFiles(id uint) (files []curseforge.File, err error) {
-	url := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
+	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
 
-	response, err := callCurseForgeAPI(url)
+	response, err := callCurseForgeAPI(u)
 	if err != nil {
 		return
 	}

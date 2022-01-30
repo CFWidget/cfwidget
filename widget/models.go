@@ -95,20 +95,24 @@ func (a *Author) AfterFind(*gorm.DB) error {
 	//In some scenarios, PHP made arrays for maps when no data, so Go cannot parse this properly
 	//As such, we simply ignore errors.
 	//These will return no data at the end until it's re-synced
-	return json.NewDecoder(strings.NewReader(*a.Properties)).Decode(&a.ParsedProjects)
+	_ = json.NewDecoder(strings.NewReader(*a.Properties)).Decode(&a.ParsedProjects)
+	if a.ParsedProjects.Projects == nil {
+		a.ParsedProjects.Projects = make([]AuthorProject, 0)
+	}
+	return nil
 }
 
 type AuthorProperties struct {
-	Projects []AuthorProjects
+	Projects []AuthorProject `json:"projects"`
 }
 
-type AuthorProjects struct {
-	Id   uint
-	Name string
+type AuthorProject struct {
+	Id   uint   `json:"id"`
+	Name string `json:"name"`
 }
 
 type AuthorResponse struct {
-	Id       uint             `json:"id"`
-	Username string           `json:"username"`
-	Projects []AuthorProjects `json:"projects"`
+	Id       uint            `json:"id"`
+	Username string          `json:"username"`
+	Projects []AuthorProject `json:"projects"`
 }
