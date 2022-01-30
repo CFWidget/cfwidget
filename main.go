@@ -62,6 +62,8 @@ func main() {
 
 	go func() {
 		ticker := time.NewTicker(time.Minute)
+
+		ScheduleProjects()
 		for {
 			select {
 			case <-ticker.C:

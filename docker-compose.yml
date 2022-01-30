@@ -35,7 +35,7 @@ services:
       MYSQL_PASSWORD: widget
       MYSQL_DATABASE: widget
       MYSQL_RANDOM_ROOT_PASSWORD: "true"
-    command: ["mysqld", "--character-set-server=utf8mb4_unicode_ci", "--collation-server=utf8mb4_unicode_ci"]
+    command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
     volumes:
       - "dbdata:/var/lib/mysql"
 
