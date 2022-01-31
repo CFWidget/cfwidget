@@ -12,7 +12,7 @@ type Project struct {
 	CurseId    *uint  `gorm:"index"`
 	Path       string `gorm:"index"`
 	Properties *string
-	Status     int
+	Status     int `gorm:"index"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time `gorm:"index"`
 
