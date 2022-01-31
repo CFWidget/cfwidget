@@ -270,7 +270,7 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode == http.StatusNotFound {
+	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusForbidden {
 		return addon, NoProjectError
 	} else if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
