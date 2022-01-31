@@ -26,6 +26,8 @@ var categoryCache = make(map[uint][]curseforge.Category)
 var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\"")
 var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
 
+var NoProjectError = errors.New("no such project")
+
 func ScheduleProjects() {
 	db, err := GetDatabase()
 	if err != nil {
@@ -91,7 +93,15 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 
 	addon, err := getAddonProperties(curseId)
 	if err != nil {
-		panic(err)
+		if err == NoProjectError {
+			project.Status = 404
+			err = db.Save(project).Error
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
 	}
 
 	description, err := getAddonDescription(curseId)
@@ -260,7 +270,9 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
+	if response.StatusCode == http.StatusNotFound {
+		return addon, NoProjectError
+	} else if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
 		return addon, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
