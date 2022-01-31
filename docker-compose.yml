@@ -19,6 +19,7 @@ services:
       MEMCACHE_ENABLE: "true"
       MEMCACHE_HOST: memcache
       WEB_HOSTNAME: "${WEB_HOST}"
+      SYNC_ENABLED: "true"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`)"

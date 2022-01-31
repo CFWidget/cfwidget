@@ -60,29 +60,31 @@ func main() {
 		return nil
 	})
 
-	go func() {
-		ticker := time.NewTicker(time.Minute)
+	if os.Getenv("SYNC_ENABLED") == "true" {
+		go func() {
+			ticker := time.NewTicker(time.Minute)
 
-		ScheduleProjects()
-		for {
-			select {
-			case <-ticker.C:
-				ScheduleProjects()
+			ScheduleProjects()
+			for {
+				select {
+				case <-ticker.C:
+					ScheduleProjects()
+				}
 			}
-		}
-	}()
+		}()
 
-	go func() {
-		ticker := time.NewTicker(time.Minute)
+		go func() {
+			ticker := time.NewTicker(time.Minute)
 
-		ScheduleAuthors()
-		for {
-			select {
-			case <-ticker.C:
-				ScheduleAuthors()
+			ScheduleAuthors()
+			for {
+				select {
+				case <-ticker.C:
+					ScheduleAuthors()
+				}
 			}
-		}
-	}()
+		}()
+	}
 
 	go func() {
 		ticker := time.NewTicker(time.Hour)

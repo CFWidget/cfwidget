@@ -9,12 +9,12 @@ import (
 
 type Project struct {
 	ID         uint   `gorm:"primaryKey"`
-	CurseId    *uint  `gorm:"index"`
-	Path       string `gorm:"index"`
+	CurseId    *uint  `gorm:"index:;index:idx_curseid_status"`
+	Path       string `gorm:"uniqueIndex"`
 	Properties *string
-	Status     int `gorm:"index"`
+	Status     int `gorm:"index:;index:idx_status_updatedat;index:idx_curseid_status"`
 	CreatedAt  time.Time
-	UpdatedAt  time.Time `gorm:"index"`
+	UpdatedAt  time.Time `gorm:"index:;index:idx_status_updatedat"`
 
 	ParsedProjects ProjectProperties `gorm:"-"`
 }
