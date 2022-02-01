@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -17,8 +18,20 @@ import (
 var g errgroup.Group
 
 func main() {
-	if os.Getenv("CORE_KEY") == "" || os.Getenv("CORE_KEY") == "${CORE_KEY}" {
-		panic(errors.New("CORE_KEY MUST BE DEFINED"))
+	if os.Getenv("CORE_KEY") == "" || os.Getenv("CORE_KEY") == "${CORE_KEY}" || os.Getenv("CORE_KEY_FILE") == "" {
+		panic(errors.New("CORE_KEY OR CORE_KEY_FILE MUST BE DEFINED"))
+	}
+
+	if os.Getenv("CORE_KEY_FILE") != "" {
+		key, err := readSecret("CORE_KEY_FILE")
+		if err != nil {
+			panic(err)
+		}
+
+		err = os.Setenv("CORE_KEY", key)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	//run actual website
@@ -116,4 +129,19 @@ func shutdownServer(httpServer *http.Server) {
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %s\n", err)
 	}
+}
+
+func readSecret(file string) (string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		return "", err
+	}
+
+	return string(data), nil
 }

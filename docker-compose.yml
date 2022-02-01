@@ -15,7 +15,7 @@ services:
       DB_DATABASE: widget
       GIN_MODE: release
       DEBUG: "false"
-      CORE_KEY: "${CORE_KEY}"
+      CORE_KEY_FILE: /run/secrets/core_key
       MEMCACHE_ENABLE: "true"
       MEMCACHE_HOST: memcache
       WEB_HOSTNAME: "${WEB_HOST}"
@@ -27,6 +27,8 @@ services:
       - "traefik.http.routers.cfwidget.tls.certresolver=myresolver"
     volumes:
       - "logs:/logs"
+    secrets:
+      - core_key
 
   database:
     image: mariadb
@@ -71,6 +73,10 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "traefik:/letsencrypt"
+
+secrets:
+  core_key:
+    external: true
 
 volumes:
   dbdata:

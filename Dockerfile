@@ -22,7 +22,7 @@ ENV DB_HOST="" \
     DB_PASS="" \
     DB_DATABASE="" \
     CACHE_TTL="5m" \
-    CORE_KEY="" \
+    CORE_KEY_FILE="/run/secrets/core_key" \
     SYNC_ENABLED="true"
 
 ENTRYPOINT ["/go/bin/cfwidget"]
