@@ -132,7 +132,7 @@ func shutdownServer(httpServer *http.Server) {
 }
 
 func readSecret(file string) (string, error) {
-	f, err := os.Open(file)
+	f, err := os.Open(os.Getenv(file))
 	if err != nil {
 		return "", err
 	}
