@@ -255,6 +255,8 @@ func handleResolveProject(c *gin.Context, path string) {
 	}
 
 	switch project.Status {
+	case 403:
+		fallthrough
 	case 404:
 		{
 			c.AbortWithStatus(http.StatusNotFound)
