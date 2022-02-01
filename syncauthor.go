@@ -26,7 +26,7 @@ func ScheduleAuthors() {
 	}
 
 	var authors []uint
-	err = db.Model(&widget.Author{}).Where("updated_at < ?", time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(100).Find(&authors).Error
+	err = db.Model(&widget.Author{}).Where("updated_at < ?", time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(500).Find(&authors).Error
 	if err != nil {
 		log.Printf("Failed to pull projects to sync: %s", err)
 		return
@@ -71,9 +71,15 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) {
 
 	for _, v := range author.ParsedProjects.Projects {
 		project := widget.Project{}
-		err = db.Where("curse_id = ? AND status = 200", v.Id).First(&project).Error
+		//we check for a 403 because the project is "abandoned" and this breaks on the new API
+		//we will assume the list we have is still okay for them
+		err = db.Where("curse_id = ? AND status IN (200, 403)", v.Id).First(&project).Error
 		if err != nil && err != gorm.ErrRecordNotFound {
 			panic(err)
+		}
+
+		if err == gorm.ErrRecordNotFound {
+			continue
 		}
 
 		for _, m := range project.ParsedProjects.Members {

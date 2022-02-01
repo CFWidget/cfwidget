@@ -27,6 +27,7 @@ var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\""
 var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
 
 var NoProjectError = errors.New("no such project")
+var PrivateProjectError = errors.New("project private")
 
 func ScheduleProjects() {
 	db, err := GetDatabase()
@@ -36,7 +37,7 @@ func ScheduleProjects() {
 	}
 
 	var projects []uint
-	err = db.Model(&widget.Project{}).Where("status = ? AND updated_at < ?", 200, time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(100).Find(&projects).Error
+	err = db.Model(&widget.Project{}).Where("status = ? AND updated_at < ?", 200, time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(500).Find(&projects).Error
 	if err != nil {
 		log.Printf("Failed to pull projects to sync: %s", err)
 		return
@@ -95,6 +96,12 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	if err != nil {
 		if err == NoProjectError {
 			project.Status = 404
+			err = db.Save(project).Error
+			if err != nil {
+				panic(err)
+			}
+		} else if err == PrivateProjectError {
+			project.Status = 403
 			err = db.Save(project).Error
 			if err != nil {
 				panic(err)
@@ -270,9 +277,12 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode == http.StatusNotFound || response.StatusCode == http.StatusForbidden {
+	if response.StatusCode == http.StatusNotFound {
 		return addon, NoProjectError
-	} else if response.StatusCode != 200 {
+	} else if response.StatusCode == http.StatusForbidden {
+		return addon, PrivateProjectError
+	}
+	if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
 		return addon, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
