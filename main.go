@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -143,5 +144,5 @@ func readSecret(file string) (string, error) {
 		return "", err
 	}
 
-	return string(data), nil
+	return strings.TrimSpace(string(data)), nil
 }
