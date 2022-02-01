@@ -364,10 +364,15 @@ func updateGameCache() {
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != 200 {
+		body, _ := io.ReadAll(response.Body)
+		log.Printf("Error from CurseForge for getting game cache: %s (%d)", string(body), response.StatusCode)
+	}
+
 	var data curseforge.GameResponse
 	err = json.NewDecoder(response.Body).Decode(&data)
 	if err != nil {
-		log.Printf("Error syncing game cache: %s", err.Error())
+		log.Printf("Error parsing game cache: %s", err.Error())
 		return
 	}
 
