@@ -112,7 +112,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	}
 
 	description, err := getAddonDescription(curseId)
-	if err != nil {
+	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
 
@@ -168,7 +168,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	//files!!!!
 	//we have to call their API to get this stuff
 	files, err := getAddonFiles(curseId)
-	if err != nil {
+	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
 
@@ -281,10 +281,9 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 		return addon, NoProjectError
 	} else if response.StatusCode == http.StatusForbidden {
 		return addon, PrivateProjectError
-	}
-	if response.StatusCode != 200 {
+	} else if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
-		return addon, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
+		return addon, errors.New(fmt.Sprintf("Error from CurseForge properties for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
 
 	var res curseforge.ProjectResponse
@@ -296,15 +295,21 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 func getAddonFiles(id uint) (files []curseforge.File, err error) {
 	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
 
+	files = make([]curseforge.File, 0)
+
 	response, err := callCurseForgeAPI(u)
 	if err != nil {
 		return
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
+	if response.StatusCode == http.StatusNotFound {
+		return files, NoProjectError
+	} else if response.StatusCode == http.StatusForbidden {
+		return files, PrivateProjectError
+	} else if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
-		return files, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
+		return files, errors.New(fmt.Sprintf("Error from CurseForge files for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
 
 	var res curseforge.FilesResponse
@@ -323,9 +328,13 @@ func getAddonDescription(id uint) (description string, err error) {
 	}
 	defer response.Body.Close()
 
-	if response.StatusCode != 200 {
+	if response.StatusCode == http.StatusNotFound {
+		return "", NoProjectError
+	} else if response.StatusCode == http.StatusForbidden {
+		return "", PrivateProjectError
+	} else if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
-		return description, errors.New(fmt.Sprintf("Error from CurseForge for id %d: %s (%d)", id, string(body), response.StatusCode))
+		return description, errors.New(fmt.Sprintf("Error from CurseForge description for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
 
 	var data curseforge.DescriptionResponse
