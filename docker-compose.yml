@@ -1,9 +1,7 @@
 version: "3.4"
 services:
   cfwidget:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/lordralex/cfwidget
     restart: always
     depends_on:
       - database
