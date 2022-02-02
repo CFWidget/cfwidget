@@ -109,6 +109,8 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		} else {
 			panic(err)
 		}
+
+		return
 	}
 
 	description, err := getAddonDescription(curseId)
@@ -116,7 +118,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		panic(err)
 	}
 
-	newProps := widget.ProjectProperties{
+	newProps := &widget.ProjectProperties{
 		Id:          addon.Id,
 		Title:       addon.Name,
 		Summary:     addon.Summary,

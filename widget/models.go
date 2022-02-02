@@ -10,17 +10,17 @@ import (
 type Project struct {
 	ID         uint   `gorm:"primaryKey"`
 	CurseId    *uint  `gorm:"index:;index:idx_curseid_status"`
-	Path       string `gorm:"uniqueIndex"`
-	Properties *string
+	Path       string `gorm:"uniqueIndex;type:VARCHAR(191) COLLATE utf8mb3_unicode_ci"`
+	Properties *string `gorm:"type:LONGTEXT COLLATE utf8mb4_bin"`
 	Status     int `gorm:"index:;index:idx_status_updatedat;index:idx_curseid_status"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time `gorm:"index:;index:idx_status_updatedat"`
 
-	ParsedProjects ProjectProperties `gorm:"-"`
+	ParsedProjects *ProjectProperties `gorm:"-"`
 }
 
 func (p *Project) AfterFind(*gorm.DB) error {
-	if p.Properties == nil {
+	if p.Properties == nil || *p.Properties == "" {
 		return nil
 	}
 
@@ -29,6 +29,12 @@ func (p *Project) AfterFind(*gorm.DB) error {
 	//As such, we simply ignore errors.
 	//These will return no data at the end until it's re-synced
 	_ = json.NewDecoder(strings.NewReader(*p.Properties)).Decode(&p.ParsedProjects)
+
+	if p.ParsedProjects.Id == 0 {
+		p.ParsedProjects = nil
+		return nil
+	}
+
 	if p.ParsedProjects.Download != nil && p.ParsedProjects.Download.Id == 0 {
 		p.ParsedProjects.Download = nil
 	}
@@ -87,7 +93,7 @@ type Author struct {
 }
 
 func (a *Author) AfterFind(*gorm.DB) error {
-	if a.Properties == nil {
+	if a.Properties == nil || *a.Properties == "" {
 		return nil
 	}
 
