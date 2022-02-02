@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - golang
 
 jobs:
   build:
