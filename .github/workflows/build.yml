@@ -42,4 +42,4 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/${{ env.REPO }}:latest
-          platform: $ {{ matrix.platform }}
+          platforms: linux/amd64,linux/arm64
