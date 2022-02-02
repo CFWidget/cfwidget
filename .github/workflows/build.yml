@@ -14,6 +14,10 @@ jobs:
         platform: [ "linux/amd64", "linux/arm64" ]
 
     steps:
+      - name: Correct env
+        run:
+          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
 
@@ -37,4 +41,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:latest
+          tags: ghcr.io/${{ env.REPO }}:latest
