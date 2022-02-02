@@ -222,20 +222,21 @@ func handleResolveProject(c *gin.Context, path string) {
 	if id, err = cast.ToUintE(path); err == nil {
 		//the url is actually the id, so i can provide the JSON directly
 		//this also fixes the author endpoint when you query with that ID
-		err = db.Where("curse_id = ?", id).Limit(1).Find(&project).Error
+		err = db.Where("curse_id = ?", id).First(&project).Error
+
+		if err == gorm.ErrRecordNotFound || project.ID == 0 {
+			project.CurseId = &id
+		}
 	} else {
 		//the path given is just a path, we need to resolve it to a project
-		err = db.Where("path = ?", path).Find(&project).Error
+		err = db.Where("path = ?", path).First(&project).Error
 	}
 
 	//if the record doesn't exist, queue it to be located
 	if err == gorm.ErrRecordNotFound || project.ID == 0 {
 		//create the record directly, then submit to processor
-		project = &widget.Project{
-			Path:    path,
-			Status:  http.StatusAccepted,
-			CurseId: nil,
-		}
+		project.Path = path
+		project.Status = http.StatusAccepted
 
 		err = db.Create(&project).Error
 		if err != nil {

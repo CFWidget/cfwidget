@@ -384,6 +384,10 @@ func updateGameCache() {
 }
 
 func getCategories(gameId uint) []curseforge.Category {
+	if gameId == 0 {
+		return make([]curseforge.Category, 0)
+	}
+
 	if categories, exists := categoryCache[gameId]; exists {
 		return categories
 	}
