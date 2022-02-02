@@ -37,7 +37,7 @@ func ScheduleProjects() {
 	}
 
 	var projects []uint
-	err = db.Model(&widget.Project{}).Where("status IN (200, 403) AND updated_at < ?", time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(500).Find(&projects).Error
+	err = db.Model(&widget.Project{}).Where("WHERE (STATUS = 200 AND updated_at < ?) OR (STATUS IN (202, 403) AND UPDATED_AT < ?)", time.Now().Add(-5*time.Minute), time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(500).Find(&projects).Error
 	if err != nil {
 		log.Printf("Failed to pull projects to sync: %s", err)
 		return
