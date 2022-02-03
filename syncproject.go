@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"time"
 )
 
@@ -69,7 +70,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			fmt.Printf("Error syncing project: %s\n", err)
+			fmt.Printf("Error syncing project: %s\n%s", err, debug.Stack())
 		}
 	}()
 
@@ -84,7 +85,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	}
 
 	project := &widget.Project{}
-	err = db.First(&project, id).Error
+	err = db.First(project, id).Error
 	if err != nil {
 		panic(err)
 	}
