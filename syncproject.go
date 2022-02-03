@@ -90,10 +90,19 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		panic(err)
 	}
 
-	var curseId uint
-	curseId = *project.CurseId
+	if project.CurseId == nil {
+		project.Status = 404
+		err = db.Save(project).Error
+		if err != nil {
+			panic(err)
+		}
+		return
+	}
 
-	addon, err := getAddonProperties(curseId)
+	var curseId *uint
+	curseId = project.CurseId
+
+	addon, err := getAddonProperties(*curseId)
 	if err != nil {
 		if err == NoProjectError {
 			project.Status = 404
@@ -114,7 +123,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		return
 	}
 
-	description, err := getAddonDescription(curseId)
+	description, err := getAddonDescription(*curseId)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
@@ -170,7 +179,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 
 	//files!!!!
 	//we have to call their API to get this stuff
-	files, err := getAddonFiles(curseId)
+	files, err := getAddonFiles(*curseId)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
