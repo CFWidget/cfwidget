@@ -245,7 +245,7 @@ func handleResolveProject(c *gin.Context, path string) {
 		}
 
 		addChan <- path
-		c.AbortWithStatusJSON(http.StatusOK, ApiWebResponse{Accepted: true})
+		c.AbortWithStatusJSON(http.StatusAccepted, ApiWebResponse{Accepted: true})
 		return
 	}
 
