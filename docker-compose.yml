@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   cfwidget:
-    image: ghcr.io/lordralex/cfwidget
+    image: ghcr.io/cfwidget/cfwidget
     restart: always
     depends_on:
       - database
