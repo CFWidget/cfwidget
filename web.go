@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-contrib/cache"
-	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/gin"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
@@ -23,60 +21,30 @@ type ApiWebResponse struct {
 }
 
 var AllowedFiles = []string{"js/app.js", "favicon.ico", "css/app.css"}
+var cacheTtl = time.Hour
 
 const AuthorPath = "author/"
 
-func RegisterApiRoutes(e *gin.Engine) {
-	e.LoadHTMLGlob("templates/*.tmpl")
-
-	e.GET("/*projectPath", MemCache(Resolve, BrowserCache, GetAuthor, GetProject))
-}
-
-func MemCache(middleware ...gin.HandlerFunc) gin.HandlerFunc {
-	var store persistence.CacheStore
-	cacheTtl := getCacheTtl()
-
-	if os.Getenv("MEMCACHE_ENABLE") == "true" {
-		store = persistence.NewMemcachedBinaryStore(os.Getenv("MEMCACHE_HOST"), os.Getenv("MEMCACHE_USER"), os.Getenv("MEMCACHE_PASS"), cacheTtl)
-	} else if os.Getenv("INMEMCACHE_ENABLE") == "true" {
-		store = persistence.NewInMemoryStore(cacheTtl)
-	}
-
-	if store != nil {
-		return cache.CachePage(store, time.Minute, runHandlers(middleware...))
-	}
-
-	return runHandlers(middleware...)
-}
-
-func BrowserCache(c *gin.Context) {
-	c.Header("Cache-Control", fmt.Sprintf("max-age=%.0f", getCacheTtl().Seconds()))
-}
-
-func runHandlers(middleware ...gin.HandlerFunc) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		for _, v := range middleware {
-			v(c)
-			if c.IsAborted() {
-				break
-			}
-		}
-	}
-}
-
-func getCacheTtl() time.Duration {
+func init() {
 	var err error
 	cacheLen := os.Getenv("CACHE_TTL")
 
-	cacheTtl := persistence.DEFAULT
 	if cacheLen != "" {
 		cacheTtl, err = time.ParseDuration(cacheLen)
 		if err != nil {
 			panic(err)
 		}
 	}
+}
 
-	return cacheTtl
+func RegisterApiRoutes(e *gin.Engine) {
+	e.LoadHTMLGlob("templates/*.tmpl")
+
+	e.GET("/*projectPath", Resolve, BrowserCache, GetAuthor, GetProject)
+}
+
+func BrowserCache(c *gin.Context) {
+	c.Header("Cache-Control", fmt.Sprintf("max-age=%.0f", cacheTtl.Seconds()))
 }
 
 func Resolve(c *gin.Context) {
@@ -86,7 +54,6 @@ func Resolve(c *gin.Context) {
 		//if this is not the web side of the fence, redirect to the web side of the fence
 		if c.Request.Host != os.Getenv("WEB_HOSTNAME") {
 			c.Redirect(http.StatusTemporaryRedirect, "https://"+os.Getenv("WEB_HOSTNAME"))
-			c.Abort()
 			return
 		} else {
 			//otherwise, render our documentation
