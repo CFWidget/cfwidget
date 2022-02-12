@@ -44,7 +44,7 @@ func RegisterApiRoutes(e *gin.Engine) {
 }
 
 func BrowserCache(c *gin.Context) {
-	c.Header("Cache-Control", fmt.Sprintf("max-age=%.0f", cacheTtl.Seconds()))
+	c.Header("Cache-Control", fmt.Sprintf("public;max-age=%.0f;etag", cacheTtl.Seconds()))
 }
 
 func Resolve(c *gin.Context) {
