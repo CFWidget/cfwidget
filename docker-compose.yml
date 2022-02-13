@@ -13,20 +13,23 @@ services:
       DB_DATABASE: widget
       GIN_MODE: release
       DEBUG: "false"
-      CORE_KEY_FILE: /run/secrets/core_key
+      CORE_KEY_FILE: "/run/secrets/core_key"
       MEMCACHE_ENABLE: "true"
       MEMCACHE_HOST: memcache
       WEB_HOSTNAME: "${WEB_HOST}"
       SYNC_ENABLED: "true"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`)"
-      - "traefik.http.routers.cfwidget.entrypoints=websecure"
-      - "traefik.http.routers.cfwidget.tls.certresolver=myresolver"
-    volumes:
-      - "logs:/logs"
     secrets:
       - core_key
+    deploy:
+      placement:
+        constraints:
+          - "node.role==manager"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`)"
+        - "traefik.http.routers.cfwidget.entrypoints=websecure"
+        - "traefik.http.routers.cfwidget.tls.certresolver=myresolver"
+        - "traefik.http.services.cfwidget.loadbalancer.server.port=8080"
 
   database:
     image: mariadb
@@ -37,40 +40,60 @@ services:
       MYSQL_DATABASE: widget
       MYSQL_RANDOM_ROOT_PASSWORD: "true"
     command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
-    ports:
-    - "127.0.0.1:3306:3306"
     volumes:
       - "dbdata:/var/lib/mysql"
+    deploy:
+      placement:
+        constraints:
+          - "node.role==manager"
 
   memcache:
     image: memcached
     restart: always
     command: ["-m", "64m"]
+    deploy:
+      placement:
+        constraints:
+          - "node.role==manager"
+
   traefik:
     image: "traefik:v2.5"
-    depends_on:
-      - cfwidget
     command:
-      #- "--log.level=debug"
-      #- "--api.insecure=true"
+      - "--api"
+      - "--log.level=INFO"
+      - "--log.filePath=/traefik-logs/traefik.log"
+      - "--accesslog.filepath=/traefik-logs/access.log"
       - "--providers.docker=true"
+      - "--providers.docker.swarmmode=true"
       - "--providers.docker.exposedbydefault=false"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
       - "--certificatesresolvers.myresolver.acme.email=${EMAIL_ACME}"
       - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
       - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
-      #- "--certificatesresolvers.myresolver.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory"
       - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
       - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
     ports:
       - "80:80"
       - "443:443"
-      #- "8080:8080"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
       - "traefik:/letsencrypt"
+      - "logs:/traefik-logs"
+    deploy:
+      placement:
+        constraints:
+          - "node.role==manager"
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.rule=Host(`${DASHBOARD_HOST}`)"
+        - "traefik.http.routers.traefik.entrypoints=websecure"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.routers.traefik.middlewares=auth"
+        - "traefik.http.middlewares.auth.basicauth.users=${USER}"
+        - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+        - "traefik.http.services.traefik.loadbalancer.server.port=888"
 
 secrets:
   core_key:
