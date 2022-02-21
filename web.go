@@ -183,6 +183,10 @@ func handleResolveProject(c *gin.Context, path string) {
 		return
 	}
 
+	if strings.HasPrefix(path, "mc-mods/minecraft/") {
+		path = "minecraft/mc-mods/" + strings.TrimPrefix(path, "mc-mods/minecraft/")
+	}
+
 	project := &widget.Project{}
 	var id uint
 

@@ -5,7 +5,6 @@ services:
     restart: always
     depends_on:
       - database
-      - memcache
     environment:
       DB_USER: widget
       DB_PASS: widget
@@ -14,8 +13,6 @@ services:
       GIN_MODE: release
       DEBUG: "false"
       CORE_KEY_FILE: "/run/secrets/core_key"
-      MEMCACHE_ENABLE: "true"
-      MEMCACHE_HOST: memcache
       WEB_HOSTNAME: "${WEB_HOST}"
       SYNC_ENABLED: "true"
     secrets:
@@ -26,7 +23,7 @@ services:
           - "node.role==manager"
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`)"
+        - "traefik.http.routers.cfwidget.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`) || Host(`${ROOT_HOST}`)"
         - "traefik.http.routers.cfwidget.entrypoints=websecure"
         - "traefik.http.routers.cfwidget.tls.certresolver=myresolver"
         - "traefik.http.services.cfwidget.loadbalancer.server.port=8080"
@@ -42,15 +39,6 @@ services:
     command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
     volumes:
       - "dbdata:/var/lib/mysql"
-    deploy:
-      placement:
-        constraints:
-          - "node.role==manager"
-
-  memcache:
-    image: memcached
-    restart: always
-    command: ["-m", "64m"]
     deploy:
       placement:
         constraints:
