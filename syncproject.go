@@ -302,7 +302,7 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 }
 
 func getAddonFiles(id uint) (files []curseforge.File, err error) {
-	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=50", id)
+	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
 
 	files = make([]curseforge.File, 0)
 
