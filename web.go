@@ -48,7 +48,7 @@ func BrowserCache(c *gin.Context) {
 }
 
 func Resolve(c *gin.Context) {
-	path := strings.TrimPrefix(c.Param("projectPath"), "/")
+	path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
 
 	if path == "" {
 		//if this is not the web side of the fence, redirect to the web side of the fence
