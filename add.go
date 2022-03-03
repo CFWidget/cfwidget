@@ -1,12 +1,16 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/lordralex/cfwidget/curseforge"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
 	"log"
 	"net/http"
 	"regexp"
+	"strings"
 )
 
 var addChan = make(chan string, 10)
@@ -47,13 +51,21 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 		curseId = cast.ToUint(matches[1])
 		project.CurseId = &curseId
 	} else {
-		//for now, we can't resolve, so mark as 4o4
-		project.Status = http.StatusNotFound
-		err = db.Save(project).Error
+		//for now, we can't resolve, so mark as 404
+		id, err := resolveSlug(url)
 		if err != nil {
 			panic(err)
 		}
-		return
+		if id == 0 {
+			project.Status = http.StatusNotFound
+			err = db.Save(project).Error
+			if err != nil {
+				panic(err)
+			}
+			return
+		} else {
+			project.CurseId = &id
+		}
 	}
 
 	if project.CurseId != nil && *project.CurseId != 0 {
@@ -83,4 +95,41 @@ func addWorker() {
 	for i := range addChan {
 		addProjectConsumer.Consume(i)
 	}
+}
+
+func resolveSlug(path string) (uint, error) {
+	var err error
+
+	parts := strings.Split(path, "/")
+	if len(parts) != 3 {
+		return 0, errors.New("invalid slug")
+	}
+
+	game := getGameBySlug(parts[0])
+	//category := parts[1]
+	slug := parts[2]
+
+	if game.Id == 0 {
+		return 0, errors.New("unknown game")
+	}
+
+	response, err := callCurseForgeAPI(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d", slug, game.Id))
+	if err != nil {
+		return 0, err
+	}
+	defer response.Body.Close()
+
+	var data curseforge.SearchResponse
+	err = json.NewDecoder(response.Body).Decode(&data)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, v := range data.Data {
+		if v.Slug == slug {
+			return v.Id, nil
+		}
+	}
+
+	return 0, errors.New("slug not found")
 }

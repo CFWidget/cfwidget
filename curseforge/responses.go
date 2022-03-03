@@ -4,6 +4,10 @@ type ProjectResponse struct {
 	Data Addon
 }
 
+type SearchResponse struct {
+	Data []Addon
+}
+
 type DescriptionResponse struct {
 	Data string
 }

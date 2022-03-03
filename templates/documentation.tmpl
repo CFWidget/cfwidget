@@ -23,7 +23,7 @@
             </p>
             <p class="black-70">
           <span class="roboto-mono b" id="requests-counter">
-            0</span><span class="gray" title="estimated">*
+            Over 1 billion</span><span class="gray" title="estimated">*
           </span>
                 requests served since 2013.
             </p>
@@ -63,16 +63,22 @@
     </div>
 </div>
 <div class="measure-wide center pv3 mb5 ph4 ph0-l" id="documentation">
+    <h2 id="documentation:contact">Contact</h2>
+    <p>
+        We now have a Discord! - <a href="https://discord.gg/FENdtjAJRF">https://discord.gg/FENdtjAJRF</a>
+    </p>
+
     <h2 id="documentation:about">API</h2>
     <p>
         The CurseForge Widget API is available over https at
         <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">api.cfwidget.com</code>. Project details can be retrieved
-        by making a GET request to this endpoint where the path of your request is a current or legacy CurseForge
-        project path.
+        by making a GET request to this endpoint where the path of your request is a current CurseForge
+        project path or a project id.
     </p>
     <p>
         <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/227724
+            <span class="b">GET</span> https://api.cfwidget.com/minecraft/mc-mods/journeymap
         </code>
     <pre class="f6">
 {
@@ -210,7 +216,7 @@
         to find a more suitable solution that protects the service reliability
         while enabling your use case.
     </p>
-    <h2 id="documentation:compatibility">Backwards Compatibility</h2>
+    <h2 id="documentation:compatibility">Backwards Compatibility and History</h2>
     <p>
         During the many years this service has been operating it has been through
         many iterations, some required by changes to CurseForge and others
@@ -311,12 +317,9 @@
         changes to the API which would cause any forms of breaking, however functionality may feel different. Issues
         should be reported.
     </p>
-    <h2 id="documentation:contact">Contact</h2>
     <p>
-        We now have a Discord! - <a href="https://discord.gg/FENdtjAJRF">https://discord.gg/FENdtjAJRF</a></p>
-    <p>You can also reach out via <a class="link curse-orange"
-                                     href="http://www.minecraftforum.net/private-messages/send?recipient=Lord_Ralex">
-            Private Message on minecraftforum.net</a> or email — admin@cfwidget.com</a>
+        As of April 1st, 2022, the ability to use the CurseForge path has been re-implemented due to changes by Overwolf.
+        This means paths like /minecraft/mc-mods/journeymap can be resolved and linked to a project.
     </p>
     <h2 id="privacy">Privacy</h2>
     <p>
@@ -327,14 +330,5 @@
     </p>
 </div>
 <script src="/js/app.js"></script>
-<script type="text/javascript">
-document.addEventListener('DOMContentLoaded', function () {
-  setInterval(function () {
-    let counter = document.getElementById('requests-counter')
-    let count = parseInt(counter.innerHTML.replace(/,/g, ''))
-    counter.innerHTML = (count + 1).toLocaleString()
-  }, (1000 / 3))
-})
-</script>
 </body>
 </html>

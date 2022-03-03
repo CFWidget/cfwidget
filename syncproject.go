@@ -21,9 +21,6 @@ import (
 var syncProjectConsumer SyncProjectConsumer
 var syncChan = make(chan uint, 500)
 
-var gameCache = make(map[uint]curseforge.Game)
-var categoryCache = make(map[uint][]curseforge.Category)
-
 var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\"")
 var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
 
@@ -305,7 +302,7 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 }
 
 func getAddonFiles(id uint) (files []curseforge.File, err error) {
-	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
+	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=50", id)
 
 	files = make([]curseforge.File, 0)
 
@@ -366,73 +363,4 @@ func getAddonDescription(id uint) (description string, err error) {
 		return "\"" + result + "\""
 	})
 	return
-}
-
-func updateGameCache() {
-	response, err := callCurseForgeAPI("https://api.curseforge.com/v1/games")
-	if err != nil {
-		log.Printf("Error syncing game cache: %s", err.Error())
-		return
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		body, _ := io.ReadAll(response.Body)
-		log.Printf("Error from CurseForge for getting game cache: %s (%d)", string(body), response.StatusCode)
-	}
-
-	var data curseforge.GameResponse
-	err = json.NewDecoder(response.Body).Decode(&data)
-	if err != nil {
-		log.Printf("Error parsing game cache: %s", err.Error())
-		return
-	}
-
-	newMap := make(map[uint]curseforge.Game)
-	for _, v := range data.Data {
-		newMap[v.Id] = v
-	}
-	gameCache = newMap
-}
-
-func getCategories(gameId uint) []curseforge.Category {
-	if gameId == 0 {
-		return make([]curseforge.Category, 0)
-	}
-
-	if categories, exists := categoryCache[gameId]; exists {
-		return categories
-	}
-
-	var data curseforge.CategoryResponse
-	response, err := callCurseForgeAPI(fmt.Sprintf("https://api.curseforge.com/v1/categories?gameId=%d&pageSize=1000", gameId))
-	if err != nil {
-		log.Printf("Error getting categories for %d: %s", gameId, err.Error())
-		return make([]curseforge.Category, 0)
-	}
-	defer response.Body.Close()
-
-	err = json.NewDecoder(response.Body).Decode(&data)
-	if err != nil {
-		log.Printf("Error getting categories for %d: %s", gameId, err.Error())
-		return make([]curseforge.Category, 0)
-	}
-	categoryCache[gameId] = data.Data
-	return data.Data
-}
-
-func getPrimaryCategoryFor(categories []curseforge.Category, id uint) curseforge.Category {
-	for _, v := range categories {
-		if v.Id == id {
-			//if this is the highest, this is what we want
-			if v.ParentCategoryId == 0 {
-				return v
-			}
-
-			//otherwise... we need to see the parent of this one
-			return getPrimaryCategoryFor(categories, v.ParentCategoryId)
-		}
-	}
-
-	return curseforge.Category{}
 }
