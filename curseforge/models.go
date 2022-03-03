@@ -67,3 +67,10 @@ type Game struct {
 	Name string
 	Slug string
 }
+
+type Pagination struct {
+	Index       int
+	PageSize    int
+	ResultCount int
+	TotalCount  int
+}

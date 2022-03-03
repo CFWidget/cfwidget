@@ -130,7 +130,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		Title:       addon.Name,
 		Summary:     addon.Summary,
 		Description: description,
-		Game:        gameCache[addon.GameId].Slug,
+		Game:        curseforge.GetGame(addon.GameId).Slug,
 		Type:        "",
 		Urls: map[string]string{
 			"curseforge": addon.Links.WebsiteUrl,
@@ -154,8 +154,8 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		newProps.Categories = append(newProps.Categories, v.Name)
 	}
 
-	categories := getCategories(addon.GameId)
-	newProps.Type = getPrimaryCategoryFor(categories, addon.PrimaryCategoryId).Name
+	categories, err := curseforge.GetCategories(addon.GameId)
+	newProps.Type = curseforge.GetPrimaryCategoryFor(categories, addon.PrimaryCategoryId).Name
 
 	newProps.Thumbnail = addon.Logo.ThumbnailUrl
 
@@ -176,7 +176,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 
 	//files!!!!
 	//we have to call their API to get this stuff
-	files, err := getAddonFiles(*curseId)
+	files, err := curseforge.GetFiles(*curseId)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
@@ -278,9 +278,9 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 }
 
 func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
-	url := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d", id)
+	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d", id)
 
-	response, err := callCurseForgeAPI(url)
+	response, err := curseforge.Call(u)
 	if err != nil {
 		return
 	}
@@ -301,37 +301,10 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 	return
 }
 
-func getAddonFiles(id uint) (files []curseforge.File, err error) {
-	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?pageSize=1000", id)
-
-	files = make([]curseforge.File, 0)
-
-	response, err := callCurseForgeAPI(u)
-	if err != nil {
-		return
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode == http.StatusNotFound {
-		return files, NoProjectError
-	} else if response.StatusCode == http.StatusForbidden {
-		return files, PrivateProjectError
-	} else if response.StatusCode != 200 {
-		body, _ := io.ReadAll(response.Body)
-		return files, errors.New(fmt.Sprintf("Error from CurseForge files for id %d: %s (%d)", id, string(body), response.StatusCode))
-	}
-
-	var res curseforge.FilesResponse
-
-	err = json.NewDecoder(response.Body).Decode(&res)
-	files = res.Data
-	return
-}
-
 func getAddonDescription(id uint) (description string, err error) {
 	requestUrl := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/description", id)
 
-	response, err := callCurseForgeAPI(requestUrl)
+	response, err := curseforge.Call(requestUrl)
 	if err != nil {
 		return
 	}

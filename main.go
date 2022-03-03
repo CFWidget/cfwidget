@@ -42,8 +42,6 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
-	updateGameCache()
-
 	g.Go(func() error {
 		web := gin.New()
 		web.Use(gin.Recovery())
@@ -99,16 +97,6 @@ func main() {
 			}
 		}()
 	}
-
-	go func() {
-		ticker := time.NewTicker(time.Hour)
-		for {
-			select {
-			case <-ticker.C:
-				updateGameCache()
-			}
-		}
-	}()
 
 	//SyncProject(17618)
 

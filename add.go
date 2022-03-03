@@ -105,7 +105,7 @@ func resolveSlug(path string) (uint, error) {
 		return 0, errors.New("invalid slug")
 	}
 
-	game := getGameBySlug(parts[0])
+	game := curseforge.GetGameBySlug(parts[0])
 	//category := parts[1]
 	slug := parts[2]
 
@@ -113,7 +113,7 @@ func resolveSlug(path string) (uint, error) {
 		return 0, errors.New("unknown game")
 	}
 
-	response, err := callCurseForgeAPI(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d", slug, game.Id))
+	response, err := curseforge.Call(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d", slug, game.Id))
 	if err != nil {
 		return 0, err
 	}
