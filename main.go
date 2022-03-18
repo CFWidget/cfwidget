@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 	"io"
@@ -59,6 +60,16 @@ func main() {
 				param.Path,
 				param.ErrorMessage,
 			)
+		}))
+
+		cors.Default()
+
+		web.Use(cors.New(cors.Config{
+			AllowAllOrigins:  true,
+			AllowMethods:     []string{"GET"},
+			AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type"},
+			AllowCredentials: false,
+			MaxAge:           12 * time.Hour,
 		}))
 
 		RegisterApiRoutes(web)
