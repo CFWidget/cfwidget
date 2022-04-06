@@ -29,7 +29,9 @@ func init() {
 			select {
 			case <-ticker.C:
 				err = updateGameCache()
-				log.Printf("Error updating game cache: %s\n", err.Error())
+				if err != nil {
+					log.Printf("Error updating game cache: %s\n", err.Error())
+				}
 			}
 		}
 	}()
