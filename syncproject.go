@@ -67,7 +67,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	defer func() {
 		err := recover()
 		if err != nil {
-			fmt.Printf("Error syncing project: %s\n%s", err, debug.Stack())
+			log.Printf("Error syncing project %d: %s\n%s", id, err, debug.Stack())
 		}
 	}()
 
@@ -178,7 +178,8 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 	//we have to call their API to get this stuff
 	files, err := curseforge.GetFiles(*curseId)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
-		panic(err)
+		newProps.Files = project.ParsedProjects.Files
+		log.Printf("Error getting files: %s\n%s", err, debug.Stack())
 	}
 
 	for _, v := range files {

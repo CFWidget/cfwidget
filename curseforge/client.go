@@ -2,6 +2,7 @@ package curseforge
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -161,6 +162,10 @@ func getCategories(gameId, page uint) (CategoryResponse, error) {
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != 200 {
+		return CategoryResponse{}, errors.New(fmt.Sprintf("invalid status code: %s", response.Status))
+	}
+
 	err = json.NewDecoder(response.Body).Decode(&data)
 	return data, err
 }
@@ -172,6 +177,10 @@ func getGames(page uint) (GameResponse, error) {
 		return GameResponse{}, err
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		return GameResponse{}, errors.New(fmt.Sprintf("invalid status code: %s", response.Status))
+	}
 
 	err = json.NewDecoder(response.Body).Decode(&data)
 	return data, err
@@ -213,6 +222,10 @@ func getFilesForPage(projectId, page uint) (FilesResponse, error) {
 
 	if response.StatusCode == 404 {
 		return FilesResponse{}, nil
+	}
+
+	if response.StatusCode != 200 {
+		return FilesResponse{}, errors.New(fmt.Sprintf("invalid status code: %s", response.Status))
 	}
 
 	var files FilesResponse
