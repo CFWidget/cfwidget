@@ -1,9 +1,12 @@
 package curseforge
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -60,7 +63,10 @@ func Call(u string) (*http.Response, error) {
 	response, err := client.Do(request)
 
 	if os.Getenv("DEBUG") == "true" {
-		log.Printf("Result: %s\n", response.Status)
+		//clone body so we can "replace" it
+		body, _ := io.ReadAll(response.Body)
+		response.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+		log.Printf("Result: %s\n%s\n", response.Status, string(body))
 	}
 
 	return response, err
