@@ -57,7 +57,13 @@ func Call(u string) (*http.Response, error) {
 		log.Printf("Calling %s\n", path.String())
 	}
 
-	return client.Do(request)
+	response, err := client.Do(request)
+
+	if os.Getenv("DEBUG") == "true" {
+		log.Printf("Result: %s\n", response.Status)
+	}
+
+	return response, err
 }
 
 func updateGameCache() error {

@@ -109,8 +109,6 @@ func main() {
 		}()
 	}
 
-	//SyncProject(17618)
-
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

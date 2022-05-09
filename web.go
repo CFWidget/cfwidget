@@ -41,6 +41,7 @@ func RegisterApiRoutes(e *gin.Engine) {
 	e.LoadHTMLGlob("templates/*.tmpl")
 
 	e.GET("/*projectPath", Resolve, BrowserCache, GetAuthor, GetProject)
+	e.POST("/:id", SyncCall)
 }
 
 func BrowserCache(c *gin.Context) {
@@ -174,6 +175,12 @@ func GetAuthor(c *gin.Context) {
 		Username: author.Username,
 		Projects: author.ParsedProjects.Projects,
 	})
+}
+
+func SyncCall(c *gin.Context) {
+	id := strings.TrimPrefix(c.Param("id"), "/")
+	SyncProject(cast.ToUint(id))
+	c.Status(http.StatusNoContent)
 }
 
 func handleResolveProject(c *gin.Context, path string) {
