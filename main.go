@@ -36,6 +36,14 @@ func main() {
 		}
 	}
 
+	if os.Getenv("CORE_KEY") == "" {
+		panic(errors.New("CORE_KEY IS INVALID"))
+	}
+
+	if os.Getenv("DEBUG") == "true" {
+		fmt.Printf("Key: %s\n", os.Getenv("CORE_KEY"))
+	}
+
 	//run actual website
 	webServer := &http.Server{
 		Addr:         ":8080",
