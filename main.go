@@ -19,7 +19,7 @@ import (
 
 var g errgroup.Group
 
-func main() {
+func init() {
 	if (os.Getenv("CORE_KEY") == "" || os.Getenv("CORE_KEY") == "${CORE_KEY}") && os.Getenv("CORE_KEY_FILE") == "" {
 		panic(errors.New("CORE_KEY OR CORE_KEY_FILE MUST BE DEFINED"))
 	}
@@ -43,7 +43,9 @@ func main() {
 	if os.Getenv("DEBUG") == "true" {
 		fmt.Printf("Key: %s\n", os.Getenv("CORE_KEY"))
 	}
+}
 
+func main() {
 	//run actual website
 	webServer := &http.Server{
 		Addr:         ":8080",

@@ -66,7 +66,7 @@ func Call(u string) (*http.Response, error) {
 		//clone body so we can "replace" it
 		body, _ := io.ReadAll(response.Body)
 		response.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		log.Printf("Result: %s\n%s\n", response.Status, string(body))
+		log.Printf("Result: %s\nBody: %s\n", response.Status, string(body))
 	}
 
 	return response, err
