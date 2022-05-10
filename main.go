@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/lordralex/cfwidget/curseforge"
 	"golang.org/x/sync/errgroup"
 	"io"
 	"log"
@@ -92,6 +93,8 @@ func main() {
 		}
 		return nil
 	})
+
+	curseforge.StartGameCacheSyncer()
 
 	if os.Getenv("SYNC_ENABLED") == "true" {
 		go func() {

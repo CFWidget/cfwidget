@@ -21,7 +21,7 @@ var categoryCache = make(map[uint][]Category)
 
 const PageSize = 50
 
-func init() {
+func StartGameCacheSyncer() {
 	go func() {
 		err := updateGameCache()
 		if err != nil {
