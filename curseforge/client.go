@@ -56,17 +56,13 @@ func Call(u string) (*http.Response, error) {
 	}
 	request.Header.Add("x-api-key", key)
 
-	if os.Getenv("DEBUG") == "true" {
-		log.Printf("Calling %s\n", path.String())
-	}
-
 	response, err := client.Do(request)
 
 	if os.Getenv("DEBUG") == "true" {
 		//clone body so we can "replace" it
 		body, _ := io.ReadAll(response.Body)
 		response.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		log.Printf("Result: %s\nBody: %s\n", response.Status, string(body))
+		log.Printf("URL %s\nResult: %s\nBody: %s\n", path.String(), response.Status, string(body))
 	}
 
 	return response, err

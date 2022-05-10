@@ -40,7 +40,7 @@ func GetDatabase() (*gorm.DB, error) {
 		sqlDB.SetMaxOpenConns(100)
 		sqlDB.SetConnMaxLifetime(time.Hour)
 
-		if os.Getenv("DEBUG") == "true" {
+		if os.Getenv("DB_DEBUG") == "true" {
 			db = db.Debug()
 		}
 

@@ -24,7 +24,8 @@ ENV DB_HOST="" \
     CACHE_TTL="5m" \
     CORE_KEY_FILE="/run/secrets/core_key" \
     CORE_KEY="" \
-    SYNC_ENABLED="true"
+    SYNC_ENABLED="true" \
+    SYNC_LIMIT="500" \
 
 ENTRYPOINT ["/go/bin/cfwidget"]
 CMD [""]
