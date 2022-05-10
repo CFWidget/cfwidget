@@ -61,6 +61,7 @@ func Call(u string) (*http.Response, error) {
 	if os.Getenv("DEBUG") == "true" {
 		//clone body so we can "replace" it
 		body, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
 		response.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 		log.Printf("URL %s\nResult: %s\nBody: %s\n", path.String(), response.Status, string(body))
 	}
