@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
 	"golang.org/x/text/language"
@@ -10,7 +11,6 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -27,7 +27,7 @@ const AuthorPath = "author/"
 
 func init() {
 	var err error
-	cacheLen := os.Getenv("CACHE_TTL")
+	cacheLen := env.Get("CACHE_TTL")
 
 	if cacheLen != "" {
 		cacheTtl, err = time.ParseDuration(cacheLen)
@@ -53,8 +53,8 @@ func Resolve(c *gin.Context) {
 
 	if path == "" {
 		//if this is not the web side of the fence, redirect to the web side of the fence
-		if c.Request.Host != os.Getenv("WEB_HOSTNAME") {
-			c.Redirect(http.StatusTemporaryRedirect, "https://"+os.Getenv("WEB_HOSTNAME"))
+		if c.Request.Host != env.Get("WEB_HOSTNAME") {
+			c.Redirect(http.StatusTemporaryRedirect, "https://"+env.Get("WEB_HOSTNAME"))
 			return
 		} else {
 			//otherwise, render our documentation
@@ -136,7 +136,7 @@ func GetProject(c *gin.Context) {
 	}
 
 	//if this is not the web side of the fence, redirect to the web side of the fence
-	if c.Request.Host != os.Getenv("WEB_HOSTNAME") {
+	if c.Request.Host != env.Get("WEB_HOSTNAME") {
 		c.JSON(project.Status, properties)
 	} else {
 		//otherwise, render our documentation

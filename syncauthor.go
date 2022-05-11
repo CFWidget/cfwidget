@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
 	"gorm.io/gorm"
 	"log"
-	"os"
 	"time"
 )
 
@@ -57,7 +57,7 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) *widget.Author {
 	}
 
 	// perform task
-	if os.Getenv("DEBUG") == "true" {
+	if env.Get("DEBUG") == "true" {
 		log.Printf("Syncing author %d", id)
 	}
 

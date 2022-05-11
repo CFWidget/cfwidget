@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lordralex/cfwidget/curseforge"
+	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
 	"gorm.io/gorm"
@@ -12,7 +13,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"runtime/debug"
 )
@@ -56,7 +56,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 	}
 
 	// perform task
-	if os.Getenv("DEBUG") == "true" {
+	if env.Get("DEBUG") == "true" {
 		log.Printf("Syncing project %d", id)
 	}
 

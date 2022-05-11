@@ -7,13 +7,12 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/lordralex/cfwidget/curseforge"
+	"github.com/lordralex/cfwidget/env"
 	"golang.org/x/sync/errgroup"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 )
@@ -21,24 +20,8 @@ import (
 var g errgroup.Group
 
 func init() {
-	if (os.Getenv("CORE_KEY") == "" || os.Getenv("CORE_KEY") == "${CORE_KEY}") && os.Getenv("CORE_KEY_FILE") == "" {
+	if env.Get("CORE_KEY") == "" {
 		panic(errors.New("CORE_KEY OR CORE_KEY_FILE MUST BE DEFINED"))
-	}
-
-	if os.Getenv("CORE_KEY_FILE") != "" {
-		key, err := readSecret("CORE_KEY_FILE")
-		if err != nil {
-			panic(err)
-		}
-
-		err = os.Setenv("CORE_KEY", key)
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if os.Getenv("CORE_KEY") == "" {
-		panic(errors.New("CORE_KEY IS INVALID"))
 	}
 }
 
@@ -122,19 +105,4 @@ func shutdownServer(httpServer *http.Server) {
 	if err := httpServer.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %s\n", err)
 	}
-}
-
-func readSecret(file string) (string, error) {
-	f, err := os.Open(os.Getenv(file))
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	data, err := io.ReadAll(f)
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(string(data)), nil
 }

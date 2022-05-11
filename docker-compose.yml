@@ -7,7 +7,7 @@ services:
       - database
     environment:
       DB_USER: widget
-      DB_PASS: widget
+      DB_PASS_FILE: "/run/secrets/widget_db_pw"
       DB_HOST: database
       DB_DATABASE: widget
       DB_DEBUG: "false"
@@ -34,7 +34,7 @@ services:
     restart: always
     environment:
       MYSQL_USER: widget
-      MYSQL_PASSWORD: widget
+      MYSQL_PASSWORD_FILE: "/run/secrets/widget_db_pw"
       MYSQL_DATABASE: widget
       MYSQL_RANDOM_ROOT_PASSWORD: "true"
     command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
@@ -47,6 +47,8 @@ services:
 
 secrets:
   core_key:
+    external: true
+  widget_db_pw:
     external: true
 
 volumes:

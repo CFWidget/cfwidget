@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/lordralex/cfwidget/env"
 	"io"
 	"io/ioutil"
 	"log"
@@ -58,7 +59,7 @@ func Call(u string) (*http.Response, error) {
 
 	response, err := client.Do(request)
 
-	if os.Getenv("DEBUG") == "true" {
+	if env.Get("DEBUG") == "true" {
 		//clone body so we can "replace" it
 		body, _ := io.ReadAll(response.Body)
 		_ = response.Body.Close()
