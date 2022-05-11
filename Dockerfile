@@ -21,11 +21,13 @@ ENV DB_HOST="" \
     DB_USER="" \
     DB_PASS="" \
     DB_DATABASE="" \
+    DB_DEBUG="false" \
     CACHE_TTL="5m" \
     CORE_KEY_FILE="/run/secrets/core_key" \
     CORE_KEY="" \
-    SYNC_ENABLED="true" \
-    SYNC_LIMIT="500"
+    WEB_HOSTNAME="www.localhost" \
+    DEBUG="false" \
+    GIN_MODE="release"
 
 ENTRYPOINT ["/go/bin/cfwidget"]
 CMD [""]
