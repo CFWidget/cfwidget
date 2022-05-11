@@ -60,6 +60,8 @@ type Category struct {
 	Id               uint
 	Name             string
 	ParentCategoryId uint
+	Slug             string
+	ClassId          uint
 }
 
 type Game struct {
