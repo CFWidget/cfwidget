@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lordralex/cfwidget/curseforge"
+	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
 	"log"
@@ -27,7 +28,9 @@ func (consumer *AddProjectConsumer) Consume(url string) *widget.Project {
 	}()
 
 	// perform task
-	log.Printf("Resolving path %s", url)
+	if env.Get("DEBUG") == "true" {
+		log.Printf("Resolving path %s", url)
+	}
 
 	var curseId uint
 
@@ -52,9 +55,6 @@ func (consumer *AddProjectConsumer) Consume(url string) *widget.Project {
 	} else {
 		//for now, we can't resolve, so mark as 404
 		id, err := resolveSlug(url)
-		if err != nil {
-			panic(err)
-		}
 		if id == 0 {
 			project.Status = http.StatusNotFound
 			err = db.Save(project).Error
