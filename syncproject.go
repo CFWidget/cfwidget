@@ -15,7 +15,6 @@ import (
 	"os"
 	"regexp"
 	"runtime/debug"
-	"time"
 )
 
 var syncProjectConsumer SyncProjectConsumer
@@ -27,46 +26,20 @@ var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(
 var NoProjectError = errors.New("no such project")
 var PrivateProjectError = errors.New("project private")
 
-func ScheduleProjects() {
-	db, err := GetDatabase()
-	if err != nil {
-		log.Printf("Failed to pull projects to sync: %s", err)
-		return
-	}
-
-	limit := os.Getenv("SYNC_LIMIT")
-	numLimit := cast.ToInt(limit)
-	if numLimit == 0 || numLimit > 1000 {
-		numLimit = 500
-	}
-
-	var projects []uint
-	err = db.Model(&widget.Project{}).Where("(STATUS = 200 AND updated_at < ?) OR (STATUS IN (202, 403) AND UPDATED_AT < ?)", time.Now().Add(-5*time.Minute), time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(numLimit).Find(&projects).Error
-	if err != nil {
-		log.Printf("Failed to pull projects to sync: %s", err)
-		return
-	}
-
-	for _, v := range projects {
-		//kick off a worker to handle this
-		syncChan <- v
-	}
-}
-
-func SyncProject(id uint) {
+func SyncProject(id uint) *widget.Project {
 	//just directly perform the call, we want this one now
-	syncProjectConsumer.Consume(id)
+	return syncProjectConsumer.Consume(id)
 }
 
 func syncWorker() {
 	for i := range syncChan {
-		syncProjectConsumer.Consume(i)
+		_ = syncProjectConsumer.Consume(i)
 	}
 }
 
 type SyncProjectConsumer struct{}
 
-func (consumer *SyncProjectConsumer) Consume(id uint) {
+func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 	//let this handle how to mark the job
 	//if we get an error, it failed
 	//otherwise, it's fine
@@ -99,7 +72,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 		if err != nil {
 			panic(err)
 		}
-		return
+		return project
 	}
 
 	var curseId *uint
@@ -123,7 +96,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 			panic(err)
 		}
 
-		return
+		return project
 	}
 
 	description, err := getAddonDescription(*curseId)
@@ -282,6 +255,8 @@ func (consumer *SyncProjectConsumer) Consume(id uint) {
 			}
 		}
 	}
+
+	return project
 }
 
 func getAddonProperties(id uint) (addon curseforge.Addon, err error) {

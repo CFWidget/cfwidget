@@ -86,7 +86,7 @@ func Resolve(c *gin.Context) {
 		}
 	}
 
-	if path == "service-worker.js" || path == "service-worker-dev.js" {
+	if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
@@ -222,15 +222,24 @@ func handleResolveProject(c *gin.Context, path string) {
 			return
 		}
 
-		addChan <- path
-		c.AbortWithStatusJSON(http.StatusAccepted, ApiWebResponse{Accepted: true})
-		return
+		temp := addProjectConsumer.Consume(path)
+		if temp != nil {
+			project = temp
+		}
 	}
 
 	//if we have a different error, inform caller
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return
+	}
+
+	//resync project if older than X time
+	if project.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
+		temp := SyncProject(project.ID)
+		if temp != nil {
+			project = temp
+		}
 	}
 
 	switch project.Status {
@@ -293,6 +302,13 @@ func handleResolveAuthor(c *gin.Context, path string) {
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return
+	}
+
+	if author.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
+		temp := syncAuthorConsumer.Consume(author.Id)
+		if temp != nil {
+			author = temp
+		}
 	}
 
 	c.Set("author", author)

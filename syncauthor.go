@@ -40,7 +40,7 @@ func ScheduleAuthors() {
 
 type SyncAuthorConsumer struct{}
 
-func (consumer *SyncAuthorConsumer) Consume(id uint) {
+func (consumer *SyncAuthorConsumer) Consume(id uint) *widget.Author {
 	//let this handle how to mark the job
 	//if we get an error, it failed
 	//otherwise, it's fine
@@ -70,16 +70,23 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) {
 	newMap := make([]widget.AuthorProject, 0)
 
 	for _, v := range author.ParsedProjects.Projects {
-		project := widget.Project{}
+		project := &widget.Project{}
 		//we check for a 403 because the project is "abandoned" and this breaks on the new API
 		//we will assume the list we have is still okay for them
-		err = db.Where("curse_id = ? AND status IN (200, 403)", v.Id).First(&project).Error
+		err = db.Where("curse_id = ? AND status IN (200, 403)", v.Id).First(project).Error
 		if err != nil && err != gorm.ErrRecordNotFound {
 			panic(err)
 		}
 
 		if err == gorm.ErrRecordNotFound {
 			continue
+		}
+
+		if project.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
+			temp := syncProjectConsumer.Consume(project.ID)
+			if temp != nil {
+				project = temp
+			}
 		}
 
 		for _, m := range project.ParsedProjects.Members {
@@ -95,4 +102,6 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) {
 	if err != nil {
 		panic(err)
 	}
+
+	return author
 }

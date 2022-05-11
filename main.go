@@ -40,10 +40,6 @@ func init() {
 	if os.Getenv("CORE_KEY") == "" {
 		panic(errors.New("CORE_KEY IS INVALID"))
 	}
-
-	if os.Getenv("DEBUG") == "true" {
-		fmt.Printf("Key: %s\n", os.Getenv("CORE_KEY"))
-	}
 }
 
 func main() {
@@ -96,31 +92,17 @@ func main() {
 
 	curseforge.StartGameCacheSyncer()
 
-	if os.Getenv("SYNC_ENABLED") == "true" {
-		go func() {
-			ticker := time.NewTicker(time.Minute)
+	go func() {
+		ticker := time.NewTicker(time.Minute)
 
-			ScheduleProjects()
-			for {
-				select {
-				case <-ticker.C:
-					ScheduleProjects()
-				}
+		ScheduleAuthors()
+		for {
+			select {
+			case <-ticker.C:
+				ScheduleAuthors()
 			}
-		}()
-
-		go func() {
-			ticker := time.NewTicker(time.Minute)
-
-			ScheduleAuthors()
-			for {
-				select {
-				case <-ticker.C:
-					ScheduleAuthors()
-				}
-			}
-		}()
-	}
+		}
+	}()
 
 	quit := make(chan os.Signal)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)

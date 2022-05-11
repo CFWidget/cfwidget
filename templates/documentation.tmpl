@@ -126,20 +126,15 @@
     <h2 id="documentation:version">Download</h2>
     <p>
         Each response includes a <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">download</code> object which
-        is
-        one of the files available on the project. By default the download
-        is the most recent file with a type of <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code>,
-        with a
-        fallback to <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code> and then <code
-                class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code> if no
-        acceptable file can be found.
+        is one of the files available on the project. By default the download is the most recent file with a type of
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code>, with a fallback to
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code> and then
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code> if no acceptable file can be found.
     </p>
     <p>
         An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> parameter can be included
-        when making a
-        request, this will determine which file is used as the download. You may
-        pass a version number, release type, file ID or a combination of version
-        number and release type. For example:
+        when making a request, this will determine which file is used as the download. You may pass a version number,
+        release type, file ID or a combination of version number and release type. For example:
     </p>
     <ul class="list pa0">
         <li><span class="robot-mono b curse-orange">version=alpha</span>
@@ -162,7 +157,7 @@
         </li>
     </ul>
     <p>
-        When a request is made for a version that cannot be satisified the system
+        When a request is made for a version that cannot be satisfied the system
         will fall back to providing the most recent file as the download,
         <span class="b">except</span> when the version is a number and release
         type, in that situation the system will try and satisfy the version number
@@ -200,9 +195,8 @@
     <h2 id="documentation:data">Project Data</h2>
     <p>
         Data is served from a local database which is populated by extracting data
-        from CurseForge project pages. Project data is kept fresh by
-        continually updating projects in order of most stale, allowing for
-        maximum data freshness given the resources available. A consumer can
+        from the CurseForge 3rd Party API. Project data is only updated when a call
+        is made from a consumer to either authors or projects. A consumer can
         determine data freshness using the last_fetch response value.
     </p>
     <p>
@@ -236,7 +230,6 @@
         widget.mcf.li URLs redirect and will do so indefinitely.
     </p>
     <p>
-        From 2019, it served stale data due to the sell of MinecraftForum to MagicFind.
         Since 2019, caching has also been implemented on top of the API. Calls to the API
         will be cached for up to 2 minutes.
     </p>
@@ -321,6 +314,11 @@
         As of April 1st, 2022, the ability to use the CurseForge path has been re-implemented due to changes by Overwolf.
         This means paths like /minecraft/mc-mods/journeymap can be resolved and linked to a project.
     </p>
+    <p>
+        As of May 25th, the way data is fetched has been changed. Projects and authors will only sync data when requested.
+        This means a project who's not been queried in or has been cached for over an hour will have a longer response time
+        while data is being refreshed. However, this should have no observable impact on the quality of the data.
+        Project resolution is also now instant, where a 202 should not be returned except in rare circumstances.
     <h2 id="privacy">Privacy</h2>
     <p>
         All traffic is routed through Cloudflare, which follows the <a class="link curse-orange"

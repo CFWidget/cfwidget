@@ -13,13 +13,12 @@ import (
 	"strings"
 )
 
-var addChan = make(chan string, 10)
 var addProjectConsumer AddProjectConsumer
 var FullPathWithId = regexp.MustCompile("[a-zA-Z\\-]+/[a-zA-Z\\-]+/([0-9]+)")
 
 type AddProjectConsumer struct{}
 
-func (consumer *AddProjectConsumer) Consume(url string) {
+func (consumer *AddProjectConsumer) Consume(url string) *widget.Project {
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -62,7 +61,7 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 			if err != nil {
 				panic(err)
 			}
-			return
+			return project
 		} else {
 			project.CurseId = &id
 		}
@@ -85,16 +84,10 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 	}
 
 	if project.Status == http.StatusMovedPermanently {
-		return
+		return project
 	}
 
-	SyncProject(project.ID)
-}
-
-func addWorker() {
-	for i := range addChan {
-		addProjectConsumer.Consume(i)
-	}
+	return SyncProject(project.ID)
 }
 
 func resolveSlug(path string) (uint, error) {
