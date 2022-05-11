@@ -53,9 +53,6 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 	} else {
 		//for now, we can't resolve, so mark as 404
 		id, err := resolveSlug(url)
-		if err != nil {
-			panic(err)
-		}
 		if id == 0 {
 			project.Status = http.StatusNotFound
 			err = db.Save(project).Error
