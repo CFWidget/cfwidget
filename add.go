@@ -99,14 +99,30 @@ func resolveSlug(path string) (uint, error) {
 	}
 
 	game := curseforge.GetGameBySlug(parts[0])
-	//category := parts[1]
+	category := parts[1]
 	slug := parts[2]
 
 	if game.Id == 0 {
 		return 0, errors.New("unknown game")
 	}
 
-	response, err := curseforge.Call(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d", slug, game.Id))
+	categories, err := curseforge.GetCategories(game.Id)
+	if err != nil {
+		return 0, err
+	}
+
+	var classId uint
+	for _, v := range categories {
+		if v.Slug == category {
+			classId = v.Id
+		}
+	}
+
+	if classId == 0 {
+		return 0, errors.New("unknown category")
+	}
+
+	response, err := curseforge.Call(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d&classId=%d", slug, game.Id, classId))
 	if err != nil {
 		return 0, err
 	}
