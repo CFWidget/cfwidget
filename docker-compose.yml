@@ -18,6 +18,7 @@ services:
       CACHE_TTL: "1h"
     secrets:
       - core_key
+      - widget_db_pw
     networks:
       - default
       - ingress_default
@@ -40,6 +41,8 @@ services:
     command: ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
     volumes:
       - "dbdata:/var/lib/mysql"
+    secrets:
+      - widget_db_pw
     deploy:
       placement:
         constraints:

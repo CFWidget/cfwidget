@@ -37,7 +37,7 @@ func Get(key string) string {
 }
 
 func readSecret(file string) (string, error) {
-	f, err := os.Open(os.Getenv(file))
+	f, err := os.Open(file)
 	if err != nil {
 		return "", err
 	}
