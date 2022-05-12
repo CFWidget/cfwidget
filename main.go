@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/lordralex/cfwidget/curseforge"
 	"github.com/lordralex/cfwidget/env"
+	"go.elastic.co/apm/module/apmgin/v2"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"net/http"
@@ -35,7 +36,8 @@ func main() {
 
 	g.Go(func() error {
 		web := gin.New()
-		web.Use(gin.Recovery())
+		web.Use(apmgin.Middleware(web))
+
 		web.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 			if param.Latency > time.Minute {
 				param.Latency = param.Latency - param.Latency%time.Second

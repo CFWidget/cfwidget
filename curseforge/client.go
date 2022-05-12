@@ -2,10 +2,13 @@ package curseforge
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/lordralex/cfwidget/env"
+	"go.elastic.co/apm/module/apmhttp/v2"
+	"go.elastic.co/apm/v2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,12 +18,16 @@ import (
 	"time"
 )
 
-var client = &http.Client{}
+var client *http.Client
 
 var gameCache = make(map[uint]Game)
 var categoryCache = make(map[uint][]Category)
 
 const PageSize = 50
+
+func init() {
+	client = apmhttp.WrapClient(&http.Client{})
+}
 
 func StartGameCacheSyncer() {
 	go func() {
@@ -42,7 +49,7 @@ func StartGameCacheSyncer() {
 	}()
 }
 
-func Call(u string) (*http.Response, error) {
+func Call(u string, ctx context.Context) (*http.Response, error) {
 	key := os.Getenv("CORE_KEY")
 
 	path, err := url.Parse(u)
@@ -57,7 +64,7 @@ func Call(u string) (*http.Response, error) {
 	}
 	request.Header.Add("x-api-key", key)
 
-	response, err := client.Do(request)
+	response, err := client.Do(request.WithContext(ctx))
 
 	if env.GetBool("DEBUG") {
 		//clone body so we can "replace" it
@@ -71,12 +78,25 @@ func Call(u string) (*http.Response, error) {
 }
 
 func updateGameCache() error {
+	trans := apm.DefaultTracer().StartTransaction("gameCacheSync", "schedule")
+	defer trans.End()
+
+	defer func() {
+		err := recover()
+		if err != nil {
+			trans.Outcome = "failure"
+		}
+	}()
+
+	ctx := apm.ContextWithTransaction(context.Background(), trans)
+
 	games := make([]Game, 0)
 	page := uint(0)
 
 	for {
-		response, err := getGames(page)
+		response, err := getGames(page, ctx)
 		if err != nil {
+			trans.Outcome = "failure"
 			return err
 		}
 
@@ -104,7 +124,7 @@ func GetGame(gameId uint) Game {
 	return gameCache[gameId]
 }
 
-func GetCategories(gameId uint) ([]Category, error) {
+func GetCategories(gameId uint, ctx context.Context) ([]Category, error) {
 	if gameId == 0 {
 		return make([]Category, 0), nil
 	}
@@ -117,7 +137,7 @@ func GetCategories(gameId uint) ([]Category, error) {
 	page := uint(0)
 
 	for {
-		response, err := getCategories(gameId, page)
+		response, err := getCategories(gameId, page, ctx)
 		if err != nil {
 			return categories, err
 		}
@@ -164,9 +184,9 @@ func GetGameBySlug(slug string) Game {
 	return Game{}
 }
 
-func getCategories(gameId, page uint) (CategoryResponse, error) {
+func getCategories(gameId, page uint, ctx context.Context) (CategoryResponse, error) {
 	var data CategoryResponse
-	response, err := Call(fmt.Sprintf("https://api.curseforge.com/v1/categories?gameId=%d&pageSize=%d&index=%d", gameId, PageSize, PageSize*page))
+	response, err := Call(fmt.Sprintf("https://api.curseforge.com/v1/categories?gameId=%d&pageSize=%d&index=%d", gameId, PageSize, PageSize*page), ctx)
 	if err != nil {
 		return CategoryResponse{}, err
 	}
@@ -180,9 +200,9 @@ func getCategories(gameId, page uint) (CategoryResponse, error) {
 	return data, err
 }
 
-func getGames(page uint) (GameResponse, error) {
+func getGames(page uint, ctx context.Context) (GameResponse, error) {
 	var data GameResponse
-	response, err := Call(fmt.Sprintf("https://api.curseforge.com/v1/games?pageSize=%d&index=%d", PageSize, PageSize*page))
+	response, err := Call(fmt.Sprintf("https://api.curseforge.com/v1/games?pageSize=%d&index=%d", PageSize, PageSize*page), ctx)
 	if err != nil {
 		return GameResponse{}, err
 	}
@@ -196,12 +216,12 @@ func getGames(page uint) (GameResponse, error) {
 	return data, err
 }
 
-func GetFiles(projectId uint) ([]File, error) {
+func GetFiles(projectId uint, ctx context.Context) ([]File, error) {
 	files := make([]File, 0)
 	page := uint(0)
 
 	for {
-		response, err := getFilesForPage(projectId, page)
+		response, err := getFilesForPage(projectId, page, ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -221,10 +241,10 @@ func GetFiles(projectId uint) ([]File, error) {
 	return files, nil
 }
 
-func getFilesForPage(projectId, page uint) (FilesResponse, error) {
+func getFilesForPage(projectId, page uint, ctx context.Context) (FilesResponse, error) {
 	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/files?index=%d&pageSize=%d", projectId, page*PageSize, PageSize)
 
-	response, err := Call(u)
+	response, err := Call(u, ctx)
 	if err != nil {
 		return FilesResponse{}, err
 	}

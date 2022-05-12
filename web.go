@@ -179,7 +179,7 @@ func GetAuthor(c *gin.Context) {
 
 func SyncCall(c *gin.Context) {
 	id := strings.TrimPrefix(c.Param("id"), "/")
-	SyncProject(cast.ToUint(id))
+	SyncProject(cast.ToUint(id), c.Request.Context())
 	c.Status(http.StatusNoContent)
 }
 
@@ -189,6 +189,10 @@ func handleResolveProject(c *gin.Context, path string) {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return
 	}
+
+	ctx := c.Request.Context()
+
+	db = db.WithContext(ctx)
 
 	if strings.HasPrefix(path, "mc-mods/minecraft/") {
 		path = "minecraft/mc-mods/" + strings.TrimPrefix(path, "mc-mods/minecraft/")
@@ -222,7 +226,7 @@ func handleResolveProject(c *gin.Context, path string) {
 			return
 		}
 
-		temp := addProjectConsumer.Consume(path)
+		temp := addProjectConsumer.Consume(path, ctx)
 		if temp != nil {
 			project = temp
 		}
@@ -236,7 +240,7 @@ func handleResolveProject(c *gin.Context, path string) {
 
 	//resync project if older than X time
 	if project.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
-		temp := SyncProject(project.ID)
+		temp := SyncProject(project.ID, ctx)
 		if temp != nil {
 			project = temp
 		}
@@ -278,11 +282,15 @@ func handleResolveProject(c *gin.Context, path string) {
 }
 
 func handleResolveAuthor(c *gin.Context, path string) {
+	ctx := c.Request.Context()
+
 	db, err := GetDatabase()
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return
 	}
+
+	db = db.WithContext(ctx)
 
 	author := &widget.Author{}
 
@@ -305,7 +313,7 @@ func handleResolveAuthor(c *gin.Context, path string) {
 	}
 
 	if author.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
-		temp := syncAuthorConsumer.Consume(author.Id)
+		temp := syncAuthorConsumer.Consume(author.Id, ctx)
 		if temp != nil {
 			author = temp
 		}

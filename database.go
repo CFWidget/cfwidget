@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
-	"gorm.io/driver/mysql"
+	mysql "go.elastic.co/apm/module/apmgormv2/v2/driver/mysql"
 	"gorm.io/gorm"
 	"log"
 	"sync"
@@ -40,7 +40,7 @@ func GetDatabase() (*gorm.DB, error) {
 		sqlDB.SetMaxOpenConns(100)
 		sqlDB.SetConnMaxLifetime(time.Hour)
 
-		if env.Get("DB_DEBUG") == "true" {
+		if env.GetBool("DB_DEBUG") {
 			db = db.Debug()
 		}
 

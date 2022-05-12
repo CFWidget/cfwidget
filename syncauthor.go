@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
+	"go.elastic.co/apm/v2"
 	"gorm.io/gorm"
 	"log"
 	"time"
@@ -14,8 +16,23 @@ var syncAuthorChan = make(chan uint, 500)
 
 func syncAuthorWorker() {
 	for i := range syncAuthorChan {
-		syncAuthorConsumer.Consume(i)
+		process(i)
 	}
+}
+
+func process(id uint) {
+	trans := apm.DefaultTracer().StartTransaction("authorSync", "schedule")
+	defer trans.End()
+
+	defer func() {
+		err := recover()
+		if err != nil {
+			trans.Outcome = "failure"
+		}
+	}()
+
+	ctx := apm.ContextWithTransaction(context.Background(), trans)
+	syncAuthorConsumer.Consume(id, ctx)
 }
 
 func ScheduleAuthors() {
@@ -40,7 +57,7 @@ func ScheduleAuthors() {
 
 type SyncAuthorConsumer struct{}
 
-func (consumer *SyncAuthorConsumer) Consume(id uint) *widget.Author {
+func (consumer *SyncAuthorConsumer) Consume(id uint, ctx context.Context) *widget.Author {
 	//let this handle how to mark the job
 	//if we get an error, it failed
 	//otherwise, it's fine
@@ -55,6 +72,8 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) *widget.Author {
 	if err != nil {
 		panic(err)
 	}
+
+	db = db.WithContext(ctx)
 
 	// perform task
 	if env.GetBool("DEBUG") {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,14 +26,14 @@ var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(
 var NoProjectError = errors.New("no such project")
 var PrivateProjectError = errors.New("project private")
 
-func SyncProject(id uint) *widget.Project {
+func SyncProject(id uint, ctx context.Context) *widget.Project {
 	//just directly perform the call, we want this one now
-	return syncProjectConsumer.Consume(id)
+	return syncProjectConsumer.Consume(id, ctx)
 }
 
 type SyncProjectConsumer struct{}
 
-func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
+func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widget.Project {
 	//let this handle how to mark the job
 	//if we get an error, it failed
 	//otherwise, it's fine
@@ -47,6 +48,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 	if err != nil {
 		panic(err)
 	}
+	db = db.WithContext(ctx)
 
 	// perform task
 	if env.GetBool("DEBUG") {
@@ -71,7 +73,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 	var curseId *uint
 	curseId = project.CurseId
 
-	addon, err := getAddonProperties(*curseId)
+	addon, err := getAddonProperties(*curseId, ctx)
 	if err != nil {
 		if err == NoProjectError {
 			project.Status = 404
@@ -92,7 +94,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 		return project
 	}
 
-	description, err := getAddonDescription(*curseId)
+	description, err := getAddonDescription(*curseId, ctx)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
@@ -126,7 +128,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 		newProps.Categories = append(newProps.Categories, v.Name)
 	}
 
-	categories, err := curseforge.GetCategories(addon.GameId)
+	categories, err := curseforge.GetCategories(addon.GameId, ctx)
 	newProps.Type = curseforge.GetPrimaryCategoryFor(categories, addon.PrimaryCategoryId).Name
 
 	newProps.Thumbnail = addon.Logo.ThumbnailUrl
@@ -148,7 +150,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 
 	//files!!!!
 	//we have to call their API to get this stuff
-	files, err := curseforge.GetFiles(*curseId)
+	files, err := curseforge.GetFiles(*curseId, ctx)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		newProps.Files = project.ParsedProjects.Files
 		log.Printf("Error getting files: %s\n%s", err, debug.Stack())
@@ -252,10 +254,10 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 	return project
 }
 
-func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
+func getAddonProperties(id uint, ctx context.Context) (addon curseforge.Addon, err error) {
 	u := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d", id)
 
-	response, err := curseforge.Call(u)
+	response, err := curseforge.Call(u, ctx)
 	if err != nil {
 		return
 	}
@@ -276,10 +278,10 @@ func getAddonProperties(id uint) (addon curseforge.Addon, err error) {
 	return
 }
 
-func getAddonDescription(id uint) (description string, err error) {
+func getAddonDescription(id uint, ctx context.Context) (description string, err error) {
 	requestUrl := fmt.Sprintf("https://api.curseforge.com/v1/mods/%d/description", id)
 
-	response, err := curseforge.Call(requestUrl)
+	response, err := curseforge.Call(requestUrl, ctx)
 	if err != nil {
 		return
 	}
