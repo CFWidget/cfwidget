@@ -18,7 +18,6 @@ import (
 )
 
 var syncProjectConsumer SyncProjectConsumer
-var syncChan = make(chan uint, 500)
 
 var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\"")
 var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
@@ -29,12 +28,6 @@ var PrivateProjectError = errors.New("project private")
 func SyncProject(id uint) *widget.Project {
 	//just directly perform the call, we want this one now
 	return syncProjectConsumer.Consume(id)
-}
-
-func syncWorker() {
-	for i := range syncChan {
-		_ = syncProjectConsumer.Consume(i)
-	}
 }
 
 type SyncProjectConsumer struct{}
@@ -56,7 +49,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint) *widget.Project {
 	}
 
 	// perform task
-	if env.Get("DEBUG") == "true" {
+	if env.GetBool("DEBUG") {
 		log.Printf("Syncing project %d", id)
 	}
 

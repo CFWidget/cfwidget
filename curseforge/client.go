@@ -59,7 +59,7 @@ func Call(u string) (*http.Response, error) {
 
 	response, err := client.Do(request)
 
-	if env.Get("DEBUG") == "true" {
+	if env.GetBool("DEBUG") {
 		//clone body so we can "replace" it
 		body, _ := io.ReadAll(response.Body)
 		_ = response.Body.Close()

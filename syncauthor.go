@@ -28,7 +28,7 @@ func ScheduleAuthors() {
 	var authors []uint
 	err = db.Model(&widget.Author{}).Where("updated_at < ?", time.Now().Add(-1*time.Hour)).Select("id").Order("updated_at ASC").Limit(500).Find(&authors).Error
 	if err != nil {
-		log.Printf("Failed to pull projects to sync: %s", err)
+		log.Printf("Failed to pull authors to sync: %s", err)
 		return
 	}
 
@@ -57,7 +57,7 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) *widget.Author {
 	}
 
 	// perform task
-	if env.Get("DEBUG") == "true" {
+	if env.GetBool("DEBUG") {
 		log.Printf("Syncing author %d", id)
 	}
 
@@ -80,13 +80,6 @@ func (consumer *SyncAuthorConsumer) Consume(id uint) *widget.Author {
 
 		if err == gorm.ErrRecordNotFound {
 			continue
-		}
-
-		if project.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
-			temp := syncProjectConsumer.Consume(project.ID)
-			if temp != nil {
-				project = temp
-			}
 		}
 
 		for _, m := range project.ParsedProjects.Members {

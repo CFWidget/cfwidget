@@ -1,6 +1,7 @@
 package env
 
 import (
+	"github.com/spf13/cast"
 	"io"
 	"log"
 	"os"
@@ -34,6 +35,14 @@ func Get(key string) string {
 	//cache value into global envs for re-use
 	_ = os.Setenv(key, val)
 	return val
+}
+
+func GetBool(key string) bool {
+	return cast.ToBool(Get(key))
+}
+
+func GetInt(key string) int {
+	return cast.ToInt(Get(key))
 }
 
 func readSecret(file string) (string, error) {

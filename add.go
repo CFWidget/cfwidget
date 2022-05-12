@@ -28,7 +28,7 @@ func (consumer *AddProjectConsumer) Consume(url string) *widget.Project {
 	}()
 
 	// perform task
-	if env.Get("DEBUG") == "true" {
+	if env.GetBool("DEBUG") {
 		log.Printf("Resolving path %s", url)
 	}
 
