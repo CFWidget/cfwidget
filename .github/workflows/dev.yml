@@ -38,3 +38,14 @@ jobs:
           push: true
           tags: ghcr.io/${{ env.REPO }}:dev
           platforms: linux/amd64,linux/arm64
+          
+  deployment:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: Dev
+      url: https://dev.www.cfwidget.com/
+    steps:
+      - name: Deploy
+        run:
+          curl -X POST ${{POST_URL}}
