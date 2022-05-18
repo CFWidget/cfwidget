@@ -48,4 +48,4 @@ jobs:
     steps:
       - name: Deploy
         run:
-          curl -X POST ${{POST_URL}}
+          curl -X POST ${{ secrets.POST_URL }}
