@@ -9,6 +9,7 @@ import (
 	"github.com/lordralex/cfwidget/curseforge"
 	"github.com/lordralex/cfwidget/env"
 	"go.elastic.co/apm/module/apmgin/v2"
+	"go.elastic.co/apm/v2"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"net/http"
@@ -34,6 +35,9 @@ func main() {
 		WriteTimeout: 10 * time.Second,
 	}
 
+	//there is a race condition where APM doesn't handle creating "default" right twice
+	_ = apm.DefaultTracer()
+
 	g.Go(func() error {
 		web := gin.New()
 		web.Use(apmgin.Middleware(web))
@@ -53,8 +57,6 @@ func main() {
 				param.ErrorMessage,
 			)
 		}))
-
-		cors.Default()
 
 		web.Use(cors.New(cors.Config{
 			AllowAllOrigins:  true,
