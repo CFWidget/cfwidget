@@ -177,6 +177,13 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 			UploadedAt: v.FileDate,
 		}
 
+		for _, g := range v.GameVersions {
+			if !contains(g, invalidVersions) {
+				file.Version = g
+				break
+			}
+		}
+
 		newProps.Files = append(newProps.Files, file)
 
 		for _, ver := range file.Versions {

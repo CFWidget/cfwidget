@@ -108,10 +108,14 @@ func GetProject(c *gin.Context) {
 	properties := project.ParsedProjects
 
 	versionRequest := c.Query("version")
+	loader := c.Query("loader")
 
 	var latest widget.ProjectFile
 	for _, v := range properties.Files {
 		if v.UploadedAt.After(latest.UploadedAt) {
+			if !loaderMatches(loader, v.Versions) {
+				continue
+			}
 			if versionRequest == "" {
 				latest = v
 			} else if versionRequest == cast.ToString(v.Id) {
@@ -119,12 +123,13 @@ func GetProject(c *gin.Context) {
 			} else if versionRequest == v.Type {
 				latest = v
 			} else {
+				if contains(versionRequest, v.Versions) {
+					latest = v
+				}
 				for _, y := range v.Versions {
-					if versionRequest == y {
+					if versionRequest == fmt.Sprintf("%s/%s", y, v.Type) {
 						latest = v
 						break
-					} else if versionRequest == fmt.Sprintf("%s/%s", y, v.Type) {
-						latest = v
 					}
 				}
 			}
@@ -320,4 +325,11 @@ func handleResolveAuthor(c *gin.Context, path string) {
 	}
 
 	c.Set("author", author)
+}
+
+func loaderMatches(loader string, versions []string) bool {
+	if loader == "" {
+		return true
+	}
+	return contains(loader, versions)
 }
