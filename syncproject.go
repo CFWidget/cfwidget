@@ -26,6 +26,8 @@ var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(
 var NoProjectError = errors.New("no such project")
 var PrivateProjectError = errors.New("project private")
 
+var invalidVersions = []string{"Forge", "Fabric", "Quilt", "Rift"}
+
 func SyncProject(id uint, ctx context.Context) *widget.Project {
 	//just directly perform the call, we want this one now
 	return syncProjectConsumer.Consume(id, ctx)
@@ -178,7 +180,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 		newProps.Files = append(newProps.Files, file)
 
 		for _, ver := range file.Versions {
-			if ver == "Forge" {
+			if contains(ver, invalidVersions) {
 				continue
 			}
 			d, e := newProps.Versions[ver]
