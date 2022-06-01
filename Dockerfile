@@ -3,7 +3,7 @@ FROM golang:1.17-alpine AS builder
 WORKDIR /cfwidget
 COPY . .
 
-RUN go build -o /go/bin/cfwidget github.com/lordralex/cfwidget
+RUN go build -o /go/bin/cfwidget github.com/cfwidget/cfwidget
 
 FROM alpine
 

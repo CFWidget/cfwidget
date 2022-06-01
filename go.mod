@@ -1,4 +1,4 @@
-module github.com/lordralex/cfwidget
+module github.com/cfwidget/cfwidget
 
 go 1.17
 

@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/lordralex/cfwidget/env"
-	"github.com/lordralex/cfwidget/widget"
+	"github.com/cfwidget/cfwidget/env"
+	"github.com/cfwidget/cfwidget/widget"
 	mysql "go.elastic.co/apm/module/apmgormv2/v2/driver/mysql"
 	"gorm.io/gorm"
 	"log"

@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/lordralex/cfwidget/env"
-	"github.com/lordralex/cfwidget/widget"
+	"github.com/cfwidget/cfwidget/env"
+	"github.com/cfwidget/cfwidget/widget"
 	"go.elastic.co/apm/v2"
 	"gorm.io/gorm"
 	"log"

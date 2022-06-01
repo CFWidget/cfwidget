@@ -8,21 +8,6 @@ import (
 	"strings"
 )
 
-var defaultEnvs = map[string]string{
-	"DB_HOST":     "localhost",
-	"DB_USER":     "widget",
-	"DB_PASS":     "widget",
-	"DB_DATABASE": "widget",
-}
-
-func init() {
-	for k, v := range defaultEnvs {
-		if Get(k) == "" {
-			_ = os.Setenv(k, v)
-		}
-	}
-}
-
 func Get(key string) string {
 	filename := os.Getenv(key + "_FILE")
 	if filename == "" {
@@ -37,8 +22,24 @@ func Get(key string) string {
 	return val
 }
 
+func GetOr(key string, def string) string {
+	res := Get(key)
+	if res == "" {
+		return def
+	}
+	return res
+}
+
 func GetBool(key string) bool {
 	return cast.ToBool(Get(key))
+}
+
+func GetBoolOr(key string, def bool) bool {
+	res := Get(key)
+	if res == "" {
+		return def
+	}
+	return cast.ToBool(res)
 }
 
 func GetInt(key string) int {

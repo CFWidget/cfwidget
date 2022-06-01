@@ -1,17 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/cfwidget/cfwidget/env"
+	"github.com/cfwidget/cfwidget/widget"
 	"github.com/gin-gonic/gin"
-	"github.com/lordralex/cfwidget/env"
-	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
 	"go.elastic.co/apm/v2"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"gorm.io/gorm"
-	"log"
+	"html/template"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -22,31 +24,21 @@ type ApiWebResponse struct {
 }
 
 var AllowedFiles = []string{"js/app.js", "favicon.ico", "css/app.css"}
-var cacheTtl = time.Hour
 
 const AuthorPath = "author/"
 
-func init() {
-	var err error
-	cacheLen := env.Get("CACHE_TTL")
-
-	if cacheLen != "" {
-		cacheTtl, err = time.ParseDuration(cacheLen)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
+var templateEngine *template.Template
 
 func RegisterApiRoutes(e *gin.Engine) {
-	e.LoadHTMLGlob("templates/*.tmpl")
+	templates, err := template.New("").ParseGlob("templates/*.tmpl")
+	if err != nil {
+		panic(err)
+	}
+	templateEngine = templates
+	e.SetHTMLTemplate(templateEngine)
 
-	e.GET("/*projectPath", setTransaction, Resolve, BrowserCache, GetAuthor, GetProject)
+	e.GET("/*projectPath", setTransaction, readFromCache, Resolve, GetAuthor, GetProject)
 	e.POST("/:id", SyncCall)
-}
-
-func BrowserCache(c *gin.Context) {
-	c.Header("Cache-Control", fmt.Sprintf("public;max-age=%.0f;etag", cacheTtl.Seconds()))
 }
 
 func Resolve(c *gin.Context) {
@@ -58,17 +50,13 @@ func Resolve(c *gin.Context) {
 			c.Redirect(http.StatusTemporaryRedirect, "https://"+env.Get("WEB_HOSTNAME"))
 			return
 		} else {
-			//otherwise, render our documentation
-			if pusher := c.Writer.Pusher(); pusher != nil {
-				// use pusher.Push() to do server push
-				if err := pusher.Push("/css/app.css", nil); err != nil {
-					log.Printf("Failed to push: %v", err)
-				}
-				if err := pusher.Push("/js/app.js", nil); err != nil {
-					log.Printf("Failed to push: %v", err)
-				}
-			}
-			c.HTML(http.StatusOK, "documentation.tmpl", gin.H{})
+			buf := &bytes.Buffer{}
+			_ = templateEngine.ExecuteTemplate(buf, "documentation.tmpl", gin.H{})
+			data := buf.Bytes()
+
+			SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
+			c.Data(http.StatusOK, "text/html", data)
+
 			c.Abort()
 			return
 		}
@@ -76,18 +64,25 @@ func Resolve(c *gin.Context) {
 
 	for _, v := range AllowedFiles {
 		if v == path {
+			var contentType string
 			if strings.HasSuffix(v, ".js") {
-				c.Header("Content-Type", "application/javascript")
+				contentType = "application/javascript"
 			} else if strings.HasSuffix(v, ".css") {
-				c.Header("Content-Type", "text/css")
+				contentType = "text/css"
+			} else if strings.HasSuffix(v, ".ico") {
+				contentType = "image/x-icon"
 			}
-			c.File(v)
+
+			file, _ := os.ReadFile(v)
+			SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, contentType, file)
+			c.Data(http.StatusOK, contentType, file)
 			c.Abort()
 			return
 		}
 	}
 
 	if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
+		SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusNotFound, "", nil)
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
@@ -143,27 +138,22 @@ func GetProject(c *gin.Context) {
 
 	//if this is not the web side of the fence, redirect to the web side of the fence
 	if c.Request.Host != env.Get("WEB_HOSTNAME") {
+		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), project.Status, "application/json", properties)
+		cacheHeaders(c, cacheExpireTime)
 		c.JSON(project.Status, properties)
 	} else {
-		//otherwise, render our documentation
-		//this is for HTTP2 support, which can pre-load files for the client
-		if pusher := c.Writer.Pusher(); pusher != nil {
-			// use pusher.Push() to do server push
-			if err := pusher.Push("/css/app.css", nil); err != nil {
-				log.Printf("Failed to push: %v", err)
-			}
-			if err := pusher.Push("/js/app.js", nil); err != nil {
-				log.Printf("Failed to push: %v", err)
-			}
-		}
-
 		p := message.NewPrinter(language.English)
 		downloads := p.Sprintf("%d\n", properties.Downloads["total"])
 
-		c.HTML(http.StatusOK, "widget.tmpl", gin.H{
+		buf := &bytes.Buffer{}
+		_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
 			"project":       properties,
 			"downloadCount": downloads,
 		})
+		data := buf.Bytes()
+
+		SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
+		c.Data(http.StatusOK, "text/html", data)
 	}
 	c.Abort()
 }
@@ -175,6 +165,9 @@ func GetAuthor(c *gin.Context) {
 	}
 
 	author := obj.(*widget.Author)
+
+	cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), 200, "application/json", author)
+	cacheHeaders(c, cacheExpireTime)
 
 	c.JSON(http.StatusOK, widget.AuthorResponse{
 		Id:       author.MemberId,
@@ -333,6 +326,43 @@ func loaderMatches(loader string, versions []string) bool {
 		return true
 	}
 	return contains(loader, versions)
+}
+
+func cacheHeaders(c *gin.Context, cacheExpireTime time.Time) {
+	maxAge := cacheTtl.Seconds()
+	age := cacheTtl.Seconds() - cacheExpireTime.Sub(time.Now()).Seconds()
+
+	c.Header("Cache-Control", fmt.Sprintf("max-age=%.0f, public", maxAge))
+	c.Header("Age", fmt.Sprintf("%.0f", age))
+	c.Header("MemCache-Expires-At", cacheExpireTime.UTC().Format(time.RFC3339))
+}
+
+func readFromCache(c *gin.Context) {
+	trans := apm.TransactionFromContext(c.Request.Context())
+
+	cacheData, exists := GetFromCache(c.Request.Host, c.Request.URL.RequestURI())
+	if exists {
+		cacheHeaders(c, cacheData.ExpireAt)
+
+		if trans != nil {
+			trans.TransactionData.Context.SetLabel("cached", true)
+		}
+
+		if cacheData.ContentType == "application/json" {
+			c.JSON(cacheData.Status, cacheData.Data)
+		} else {
+			data, ok := cacheData.Data.([]byte)
+			if ok {
+				c.Data(cacheData.Status, cacheData.ContentType, data)
+			}
+		}
+
+		c.Abort()
+	} else {
+		if trans != nil {
+			trans.TransactionData.Context.SetLabel("cached", false)
+		}
+	}
 }
 
 func setTransaction(c *gin.Context) {
