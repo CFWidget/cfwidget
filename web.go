@@ -6,6 +6,7 @@ import (
 	"github.com/lordralex/cfwidget/env"
 	"github.com/lordralex/cfwidget/widget"
 	"github.com/spf13/cast"
+	"go.elastic.co/apm/v2"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"gorm.io/gorm"
@@ -40,7 +41,7 @@ func init() {
 func RegisterApiRoutes(e *gin.Engine) {
 	e.LoadHTMLGlob("templates/*.tmpl")
 
-	e.GET("/*projectPath", Resolve, BrowserCache, GetAuthor, GetProject)
+	e.GET("/*projectPath", setTransaction, Resolve, BrowserCache, GetAuthor, GetProject)
 	e.POST("/:id", SyncCall)
 }
 
@@ -332,4 +333,17 @@ func loaderMatches(loader string, versions []string) bool {
 		return true
 	}
 	return contains(loader, versions)
+}
+
+func setTransaction(c *gin.Context) {
+	trans := apm.TransactionFromContext(c.Request.Context())
+	if trans != nil {
+		for k, v := range c.Request.URL.Query() {
+			trans.TransactionData.Context.SetLabel(k, strings.ToLower(strings.Join(v, ",")))
+		}
+
+		for _, v := range c.Params {
+			trans.TransactionData.Context.SetLabel(v.Key, v.Value)
+		}
+	}
 }
