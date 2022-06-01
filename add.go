@@ -1,25 +1,27 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/lordralex/cfwidget/curseforge"
-	"github.com/lordralex/cfwidget/widget"
+	"github.com/cfwidget/cfwidget/curseforge"
+	"github.com/cfwidget/cfwidget/env"
+	"github.com/cfwidget/cfwidget/widget"
 	"github.com/spf13/cast"
+	"go.elastic.co/apm/v2"
 	"log"
 	"net/http"
 	"regexp"
 	"strings"
 )
 
-var addChan = make(chan string, 10)
 var addProjectConsumer AddProjectConsumer
 var FullPathWithId = regexp.MustCompile("[a-zA-Z\\-]+/[a-zA-Z\\-]+/([0-9]+)")
 
 type AddProjectConsumer struct{}
 
-func (consumer *AddProjectConsumer) Consume(url string) {
+func (consumer *AddProjectConsumer) Consume(url string, ctx context.Context) *widget.Project {
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -28,7 +30,9 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 	}()
 
 	// perform task
-	log.Printf("Resolving path %s", url)
+	if env.GetBool("DEBUG") {
+		log.Printf("Resolving path %s", url)
+	}
 
 	var curseId uint
 
@@ -36,6 +40,8 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 	if err != nil {
 		panic(err)
 	}
+
+	db = db.WithContext(ctx)
 
 	project := &widget.Project{}
 	err = db.Where("path = ?", url).Find(&project).Error
@@ -59,7 +65,7 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 			if err != nil {
 				panic(err)
 			}
-			return
+			return project
 		} else {
 			project.CurseId = &id
 		}
@@ -82,19 +88,16 @@ func (consumer *AddProjectConsumer) Consume(url string) {
 	}
 
 	if project.Status == http.StatusMovedPermanently {
-		return
+		return project
 	}
 
-	SyncProject(project.ID)
-}
-
-func addWorker() {
-	for i := range addChan {
-		addProjectConsumer.Consume(i)
-	}
+	return SyncProject(project.ID, ctx)
 }
 
 func resolveSlug(path string) (uint, error) {
+	span, ctx := apm.StartSpan(context.Background(), "resolveSlug", "custom")
+	defer span.End()
+
 	var err error
 
 	parts := strings.Split(path, "/")
@@ -110,7 +113,7 @@ func resolveSlug(path string) (uint, error) {
 		return 0, errors.New("unknown game")
 	}
 
-	categories, err := curseforge.GetCategories(game.Id)
+	categories, err := curseforge.GetCategories(game.Id, ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -126,7 +129,7 @@ func resolveSlug(path string) (uint, error) {
 		return 0, errors.New("unknown category")
 	}
 
-	response, err := curseforge.Call(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d&classId=%d", slug, game.Id, classId))
+	response, err := curseforge.Call(fmt.Sprintf("https://api.curseforge.com/v1/mods/search?slug=%s&gameId=%d&classId=%d", slug, game.Id, classId), ctx)
 	if err != nil {
 		return 0, err
 	}

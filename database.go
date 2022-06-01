@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/lordralex/cfwidget/widget"
-	"gorm.io/driver/mysql"
+	"github.com/cfwidget/cfwidget/env"
+	"github.com/cfwidget/cfwidget/widget"
+	mysql "go.elastic.co/apm/module/apmgormv2/v2/driver/mysql"
 	"gorm.io/gorm"
 	"log"
-	"os"
 	"sync"
 	"time"
 )
@@ -23,9 +23,9 @@ func GetDatabase() (*gorm.DB, error) {
 			return _db, nil
 		}
 
-		dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", os.Getenv("DB_USER"), os.Getenv("DB_PASS"), os.Getenv("DB_HOST"), os.Getenv("DB_DATABASE"))
+		dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8mb4&parseTime=True&loc=Local", env.Get("DB_USER"), env.Get("DB_PASS"), env.Get("DB_HOST"), env.Get("DB_DATABASE"))
 
-		log.Printf("Connecting to database: %s\n", os.Getenv("DB_HOST"))
+		log.Printf("Connecting to database: %s\n", env.Get("DB_HOST"))
 		db, err := gorm.Open(mysql.Open(dsn))
 		if err != nil {
 			log.Printf("Error connecting to database: %s", err.Error())
@@ -40,7 +40,7 @@ func GetDatabase() (*gorm.DB, error) {
 		sqlDB.SetMaxOpenConns(100)
 		sqlDB.SetConnMaxLifetime(time.Hour)
 
-		if os.Getenv("DB_DEBUG") == "true" {
+		if env.GetBool("DB_DEBUG") {
 			db = db.Debug()
 		}
 

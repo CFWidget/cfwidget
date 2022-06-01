@@ -8,11 +8,11 @@ import (
 )
 
 type Project struct {
-	ID         uint   `gorm:"primaryKey"`
-	CurseId    *uint  `gorm:"index:;index:idx_curseid_status"`
-	Path       string `gorm:"uniqueIndex;type:VARCHAR(191) COLLATE utf8mb3_unicode_ci"`
+	ID         uint    `gorm:"primaryKey"`
+	CurseId    *uint   `gorm:"index:;index:idx_curseid_status"`
+	Path       string  `gorm:"uniqueIndex;type:VARCHAR(191) COLLATE utf8mb3_unicode_ci"`
 	Properties *string `gorm:"type:LONGTEXT COLLATE utf8mb4_bin"`
-	Status     int `gorm:"index:;index:idx_status_updatedat;index:idx_curseid_status"`
+	Status     int     `gorm:"index:;index:idx_status_updatedat;index:idx_curseid_status"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time `gorm:"index:;index:idx_status_updatedat"`
 

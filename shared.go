@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 func coalesce(options ...string) string {
 	for _, v := range options {
 		if v != "" {
@@ -18,4 +20,15 @@ func firstOr(data []string, def string) string {
 		return def
 	}
 	return data[0]
+}
+
+func contains(needle string, haystack []string) bool {
+	needle = strings.ToLower(needle)
+	for _, v := range haystack {
+		if strings.ToLower(v) == needle {
+			return true
+		}
+	}
+
+	return false
 }

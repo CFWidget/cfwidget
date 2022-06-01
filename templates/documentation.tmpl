@@ -126,33 +126,28 @@
     <h2 id="documentation:version">Download</h2>
     <p>
         Each response includes a <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">download</code> object which
-        is
-        one of the files available on the project. By default the download
-        is the most recent file with a type of <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code>,
-        with a
-        fallback to <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code> and then <code
-                class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code> if no
-        acceptable file can be found.
+        is one of the files available on the project. By default the download is the most recent file with a type of
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code>, with a fallback to
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code> and then
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code> if no acceptable file can be found.
     </p>
     <p>
         An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> parameter can be included
-        when making a
-        request, this will determine which file is used as the download. You may
-        pass a version number, release type, file ID or a combination of version
-        number and release type. For example:
+        when making a request, this will determine which file is used as the download. You may pass a version number,
+        release type, file ID or a combination of version number and release type. For example:
     </p>
     <ul class="list pa0">
         <li><span class="robot-mono b curse-orange">version=alpha</span>
             Most recent file where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code> is equal to
             <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code>.
         </li>
-        <li><span class="robot-mono b curse-orange">version=1.7.9</span>
+        <li><span class="robot-mono b curse-orange">version=1.18.2</span>
             Most recent file where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> is equal to
-            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">1.7.9</code>.
+            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">1.18.2</code>.
         </li>
-        <li><span class="robot-mono b curse-orange">version=1.7.9/beta</span>
+        <li><span class="robot-mono b curse-orange">version=1.18.2/beta</span>
             Most recent file where <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> is equal to
-            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">1.7.9</code> and <code
+            <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">1.18.2</code> and <code
                     class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code> is equal to
             <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code>.
         </li>
@@ -162,7 +157,24 @@
         </li>
     </ul>
     <p>
-        When a request is made for a version that cannot be satisified the system
+        An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">loader</code> parameter can be included
+        when making a request. This will filter the download to only return a file who's versions also contain this
+        loader. For example:
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">loader=forge</span>
+            Most recent file with the tag of <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">Forge</code>.
+        </li>
+        <li><span class="robot-mono b curse-orange">loader=fabric</span>
+            Most recent file with the tag of <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">Fabric</code>.
+        </li>
+        <li><span class="robot-mono b curse-orange">loader=quilt</span>
+            Most recent file with the tag of <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">Quilt</code>.
+        </li>
+    </ul>
+
+    <p>
+        When a request is made for a version that cannot be satisfied the system
         will fall back to providing the most recent file as the download,
         <span class="b">except</span> when the version is a number and release
         type, in that situation the system will try and satisfy the version number
@@ -200,9 +212,8 @@
     <h2 id="documentation:data">Project Data</h2>
     <p>
         Data is served from a local database which is populated by extracting data
-        from CurseForge project pages. Project data is kept fresh by
-        continually updating projects in order of most stale, allowing for
-        maximum data freshness given the resources available. A consumer can
+        from the CurseForge 3rd Party API. Project data is only updated when a call
+        is made from a consumer to either authors or projects. A consumer can
         determine data freshness using the last_fetch response value.
     </p>
     <p>
@@ -225,64 +236,32 @@
         changes when data we offer is no longer available through CurseForge. API
         consumers should be mindful that it is possible that at some point in
         future data you depend on now may no longer be available and should
-        integrate accordingly. For example, monthly download counts were removed
-        by CurseForge in November 2017.
+        integrate accordingly.
     </p>
-    <p>
-        From 2013 — 2017 this service was available at widget.mcf.li, with API
-        requests made by appending .json to widget URLs. Developers making use of
-        this old format are encouraged to update their integrations to make use of
-        the new request endpoint, however this is not required as the legacy
-        widget.mcf.li URLs redirect and will do so indefinitely.
-    </p>
-    <p>
-        From 2019, it served stale data due to the sell of MinecraftForum to MagicFind.
-        Since 2019, caching has also been implemented on top of the API. Calls to the API
-        will be cached for up to 2 minutes.
-    </p>
-    <p>
-        From 2020, the syncing process has been restored. However, not all data may be present
-        due to the change in APIs used to gather this data.
-        Following fields will no longer have accurate values due to the API changes:
-    <ul>
-        <li>File downloads</li>
-        <li>License</li>
-        <li>Donate</li>
-        <li>Versions will not provide Java version</li>
-    </ul>
-    New fields added:
-    <ul>
-        <li>Summary</li>
-        <li>File display name</li>
-    </ul>
-    </p>
-    <p>
-        As of April 11th, URLs which contain the Project ID in them (i.e /minecraft/mc-mods/12345)
-        will resolve to the proper ID. This was done to ensure that if we could not determine the path,
-        that there is always a way to do so.
-        Also, urls which use the legacy format (mc-mods/minecraft) will now redirect to the correct path
-        (minecraft/mc-mods).
-    </p>
-    <p>
-        As of January 1st, 2021, due to the transfer of CurseForge to Overwolf, the API will no longer be able to
-        resolve paths to projects that do not contain the ID. As a result of this change, the following URL formats
-        are the only ways to resolve a project.
-    <ul>
-        <li>/{game}/{type}/{id}-{name}</li>
-        <li>/{id}</li>
-    </ul>
 
-    Old URLs which were already resolved to a path will work as-is and will not change. New URLs without an ID
-    in the path will fail to resolve and return a 404.
+    <p>
+        As of June 1st, 2022, the way data is fetched has been changed. Projects and authors will only sync data when requested.
+        This means a project who's not been queried in or has been cached for over an hour will have a longer response time
+        while data is being refreshed. However, this should have no observable impact on the quality of the data.
+        Project resolution is also now instant, where a 202 should not be returned except in rare circumstances.
     </p>
+
+    <p>
+        As of April 1st, 2022, the ability to use the CurseForge path has been re-implemented due to changes by Overwolf.
+        This means paths like /minecraft/mc-mods/journeymap can be resolved and linked to a project.
+    </p>
+
+    <p>
+        As of January 1st, 2022, the backend has been rewritten to support scalability and future changes. There was no
+        changes to the API which would cause any forms of breaking, however functionality may feel different. Issues
+        should be reported.
+    </p>
+
     <p>
         As of December 1st, 2021, 2 new endpoints have been added. Both endpoints return the same JSON structure. The
-        new
-        endpoints allow for getting bare author information. This only includes their id, username, and associated
-        projects
-        that CFWidget is aware of. If a project is missing, then a call to /{projectId} should be made to add the
-        project
-        to the author's list.
+        new endpoints allow for getting bare author information. This only includes their id, username, and associated
+        projects that CFWidget is aware of. If a project is missing, then a call to /{projectId} should be made to add
+        the project to the author's list.
     <ul>
         <li>/author/{id}</li>
         <li>/author/search/{username}</li>
@@ -312,15 +291,41 @@
 }
       </pre>
     </p>
+
     <p>
-        As of January 1st, 2022, the backend has been rewritten to support scalability and future changes. There was no
-        changes to the API which would cause any forms of breaking, however functionality may feel different. Issues
-        should be reported.
+        As of April 11th, URLs which contain the Project ID in them (i.e /minecraft/mc-mods/12345) will resolve to the
+        proper ID. This was done to ensure that if we could not determine the path, that there is always a way to do so.
+        Also, urls which use the legacy format (mc-mods/minecraft) will now redirect to the correct path
+        (minecraft/mc-mods).
     </p>
+
     <p>
-        As of April 1st, 2022, the ability to use the CurseForge path has been re-implemented due to changes by Overwolf.
-        This means paths like /minecraft/mc-mods/journeymap can be resolved and linked to a project.
+        From 2020, the syncing process has been restored. However, not all data may be present due to the change in APIs
+        used to gather this data. Following fields will no longer have accurate values due to the API changes:
+    <ul>
+        <li>File downloads</li>
+        <li>License</li>
+        <li>Donate</li>
+        <li>Versions will not provide Java version</li>
+    </ul>
+    New fields added:
+    <ul>
+        <li>Summary</li>
+        <li>File display name</li>
+    </ul>
     </p>
+
+    <p>
+        Since 2019, caching has also been implemented on top of the API. Calls to the API will be cached for up to 1
+        hour.
+    </p>
+
+    <p>
+        From 2013 — 2017 this service was available at widget.mcf.li, with API requests made by appending .json to
+        widget URLs. Developers making use of this old format are encouraged to update their integrations to make use of
+        the new request endpoint.
+    </p>
+
     <h2 id="privacy">Privacy</h2>
     <p>
         All traffic is routed through Cloudflare, which follows the <a class="link curse-orange"
