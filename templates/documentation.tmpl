@@ -77,22 +77,25 @@
     </p>
     <p>
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://api.cfwidget.com/227724
+            <span class="b">GET</span> https://api.cfwidget.com/32274
+        </code>
+        <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/minecraft/mc-mods/journeymap
         </code>
+
+
     <pre class="f6">
 {
-   "id": 227724,
-   "game": "Minecraft",
-   "type": "Modpacks",
+   "id": 32274,
+   "game": "minecraft",
+   "type": "Mods",
    "urls": {...},
    "files": [...]
    "downloads": {...},
    "thumbnail": "...",
    "categories": [...],
-   "created_at": "2015-02-10T18:10:29+00:00",
+   "created_at": "2011-09-19T23:49:04.217Z",
    "description": "...",
-   "last_fetch": "2018-02-08T23:19:39+00:00",
    "download": {...}
 }
       </pre>
@@ -103,7 +106,9 @@
     </p>
     <p>
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://api.cfwidget.com/author/1234567
+            <span class="b">GET</span> https://api.cfwidget.com/author/9422784
+        </code>
+        <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/author/search/MysticDrew
         </code>
     <pre class="f6">
@@ -240,7 +245,7 @@
     </p>
 
     <p>
-        As of June 1st, 2022, the way data is fetched has been changed. Projects and authors will only sync data when requested.
+        As of June 29th, 2022, the way data is fetched has been changed. Projects and authors will only sync data when requested.
         This means a project who's not been queried in or has been cached for over an hour will have a longer response time
         while data is being refreshed. However, this should have no observable impact on the quality of the data.
         Project resolution is also now instant, where a 202 should not be returned except in rare circumstances.
