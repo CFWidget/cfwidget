@@ -152,7 +152,8 @@ func GetProject(c *gin.Context) {
 		})
 		data := buf.Bytes()
 
-		SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
+		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
+		cacheHeaders(c, cacheExpireTime)
 		c.Data(http.StatusOK, "text/html", data)
 	}
 	c.Abort()
@@ -165,15 +166,16 @@ func GetAuthor(c *gin.Context) {
 	}
 
 	author := obj.(*widget.Author)
-
-	cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), 200, "application/json", author)
-	cacheHeaders(c, cacheExpireTime)
-
-	c.JSON(http.StatusOK, widget.AuthorResponse{
+	response := widget.AuthorResponse{
 		Id:       author.MemberId,
 		Username: author.Username,
 		Projects: author.ParsedProjects.Projects,
-	})
+	}
+
+	cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), 200, "application/json", response)
+	cacheHeaders(c, cacheExpireTime)
+
+	c.JSON(http.StatusOK, response)
 }
 
 func SyncCall(c *gin.Context) {
