@@ -10,10 +10,8 @@ import (
 	"go.elastic.co/apm/module/apmhttp/v2"
 	"go.elastic.co/apm/v2"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"time"
 )
@@ -52,26 +50,21 @@ func StartGameCacheSyncer() {
 func Call(u string, ctx context.Context) (*http.Response, error) {
 	key := os.Getenv("CORE_KEY")
 
-	path, err := url.Parse(u)
+	request, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	request := &http.Request{
-		Method: "GET",
-		URL:    path,
-		Header: http.Header{},
-	}
 	request.Header.Add("x-api-key", key)
 
-	response, err := client.Do(request.WithContext(ctx))
+	response, err := client.Do(request)
 
 	if env.GetBool("DEBUG") {
 		//clone body so we can "replace" it
 		body, _ := io.ReadAll(response.Body)
 		_ = response.Body.Close()
-		response.Body = ioutil.NopCloser(bytes.NewBuffer(body))
-		log.Printf("URL %s\nResult: %s\nBody: %s\n", path.String(), response.Status, string(body))
+		response.Body = io.NopCloser(bytes.NewBuffer(body))
+		log.Printf("URL %s\nResult: %s\nBody: %s\n", u, response.Status, string(body))
 	}
 
 	return response, err
