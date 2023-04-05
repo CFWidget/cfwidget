@@ -148,7 +148,9 @@ func GetProject(c *gin.Context) {
 	} else {
 		path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
 		if strings.HasSuffix(path, ".png") {
-			data, err := generateImage(properties, c.Request.Context())
+			_, darkMode := c.GetQuery("dark")
+
+			data, err := generateImage(properties, darkMode, c.Request.Context())
 			if err != nil {
 				log.Print(err)
 				c.AbortWithStatus(http.StatusInternalServerError)

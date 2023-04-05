@@ -27,8 +27,6 @@ var (
 	size    float64 = 16
 	spacing float64 = 1.5
 
-	colorCurseOrange = ParseHexColorFast("#f05523")
-
 	//go:embed FreeSans.ttf
 	regularFontData []byte
 	standardFont    = getFont(regularFontData)
@@ -38,7 +36,7 @@ var (
 	boldFont     = getFont(boldFontData)
 )
 
-func generateImage(project *widget.ProjectProperties, ctx context.Context) ([]byte, error) {
+func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context.Context) ([]byte, error) {
 	span, spanCtx := apm.StartSpan(ctx, "generateImage", "custom")
 	defer span.End()
 
@@ -105,9 +103,14 @@ func generateImage(project *widget.ProjectProperties, ctx context.Context) ([]by
 
 	//prepare white box as final result
 	finalImage := image.NewRGBA(image.Rect(0, 0, 600, 144))
-	//draw.Draw(finalImage, finalImage.Bounds(), image.NewUniform(colorCurseOrange), image.Point{X: 0, Y: 0}, draw.Src)
-	draw.Draw(finalImage, finalImage.Bounds(), image.White, image.Point{X: 0, Y: 0}, draw.Src)
-	draw.Draw(finalImage, image.Rect(0, 0, (8*2)+ThumbnailSize, (8*2)+ThumbnailSize), image.White, image.Point{X: 0, Y: 0}, draw.Src)
+
+	bgColor := image.White
+	if darkMode {
+		bgColor = image.Black
+	}
+
+	draw.Draw(finalImage, finalImage.Bounds(), bgColor, image.Point{X: 0, Y: 0}, draw.Src)
+	draw.Draw(finalImage, image.Rect(0, 0, (8*2)+ThumbnailSize, (8*2)+ThumbnailSize), bgColor, image.Point{X: 0, Y: 0}, draw.Src)
 
 	//add thumbnail image
 	draw.Draw(finalImage, image.Rect(8, 8, 8+ThumbnailSize, 8+ThumbnailSize), scaled, image.Point{X: 0, Y: 0}, draw.Src)
@@ -115,6 +118,10 @@ func generateImage(project *widget.ProjectProperties, ctx context.Context) ([]by
 	d := &font.Drawer{
 		Dst: finalImage,
 		Src: image.Black,
+	}
+
+	if darkMode {
+		d.Src = image.White
 	}
 
 	textOffset := ThumbnailSize + 8 + 8
