@@ -9,6 +9,7 @@ import (
 	"github.com/cfwidget/cfwidget/env"
 	"go.elastic.co/apm/module/apmhttp/v2"
 	"go.elastic.co/apm/v2"
+	"image"
 	"io"
 	"log"
 	"net/http"
@@ -254,4 +255,20 @@ func getFilesForPage(projectId, page uint, ctx context.Context) (FilesResponse, 
 	var files FilesResponse
 	err = json.NewDecoder(response.Body).Decode(&files)
 	return files, err
+}
+
+func GetThumbnail(url string, ctx context.Context) (image.Image, error) {
+	request, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	img, _, err := image.Decode(response.Body)
+	return img, err
 }

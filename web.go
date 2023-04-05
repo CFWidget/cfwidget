@@ -12,6 +12,7 @@ import (
 	"golang.org/x/text/message"
 	"gorm.io/gorm"
 	"html/template"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -29,6 +30,8 @@ const AuthorPath = "author/"
 
 var templateEngine *template.Template
 
+var messagePrinter = message.NewPrinter(language.English)
+
 func RegisterApiRoutes(e *gin.Engine) {
 	templates, err := template.New("").ParseGlob("templates/*.tmpl")
 	if err != nil {
@@ -43,6 +46,7 @@ func RegisterApiRoutes(e *gin.Engine) {
 
 func Resolve(c *gin.Context) {
 	path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
+	path = strings.TrimSuffix(path, ".png")
 
 	if path == "" {
 		//if this is not the web side of the fence, redirect to the web side of the fence
@@ -142,19 +146,33 @@ func GetProject(c *gin.Context) {
 		cacheHeaders(c, cacheExpireTime)
 		c.JSON(project.Status, properties)
 	} else {
-		p := message.NewPrinter(language.English)
-		downloads := p.Sprintf("%d\n", properties.Downloads["total"])
+		path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
+		if strings.HasSuffix(path, ".png") {
+			data, err := generateImage(properties, c.Request.Context())
+			if err != nil {
+				log.Print(err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
 
-		buf := &bytes.Buffer{}
-		_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
-			"project":       properties,
-			"downloadCount": downloads,
-		})
-		data := buf.Bytes()
+			cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "image/png", data)
+			cacheHeaders(c, cacheExpireTime)
 
-		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
-		cacheHeaders(c, cacheExpireTime)
-		c.Data(http.StatusOK, "text/html", data)
+			c.Data(http.StatusOK, "image/png", data)
+		} else {
+			downloads := messagePrinter.Sprintf("%d\n", properties.Downloads["total"])
+
+			buf := &bytes.Buffer{}
+			_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
+				"project":       properties,
+				"downloadCount": downloads,
+			})
+			data := buf.Bytes()
+
+			cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
+			cacheHeaders(c, cacheExpireTime)
+			c.Data(http.StatusOK, "text/html", data)
+		}
 	}
 	c.Abort()
 }

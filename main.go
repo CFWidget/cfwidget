@@ -41,6 +41,7 @@ func main() {
 	g.Go(func() error {
 		web := gin.New()
 		web.Use(apmgin.Middleware(web))
+		web.Use(gin.Recovery())
 
 		web.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 			if param.Latency > time.Minute {
