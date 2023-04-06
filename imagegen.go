@@ -42,6 +42,12 @@ func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context
 
 	var err error
 
+	gameName := project.Game
+	game := curseforge.GetGameBySlug(gameName)
+	if game.Name != "" {
+		gameName = game.Name
+	}
+
 	text := []Text{
 		{
 			Font: boldFont,
@@ -67,7 +73,7 @@ func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context
 		},
 		{
 			Font:    standardFont,
-			Text:    " " + project.Game + " " + project.Download.Version,
+			Text:    " " + gameName + " " + project.Download.Version,
 			EndLine: true,
 		},
 		{
@@ -85,7 +91,7 @@ func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context
 		},
 		{
 			Font:    standardFont,
-			Text:    " " + project.Download.UploadedAt.Format("January 02 2006, 03:04pm"),
+			Text:    " " + project.Download.UploadedAt.Format("January 02 2006, 03:04pm") + " UTC",
 			EndLine: true,
 		},
 	}

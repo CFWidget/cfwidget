@@ -41,6 +41,7 @@ func RegisterApiRoutes(e *gin.Engine) {
 	e.SetHTMLTemplate(templateEngine)
 
 	e.GET("/*projectPath", setTransaction, readFromCache, Resolve, GetAuthor, GetProject)
+	e.DELETE("/*projectPath", setTransaction, deleteFromCache)
 	e.POST("/:id", SyncCall)
 }
 
@@ -398,4 +399,9 @@ func setTransaction(c *gin.Context) {
 			trans.TransactionData.Context.SetLabel(v.Key, v.Value)
 		}
 	}
+}
+
+func deleteFromCache(c *gin.Context) {
+	RemoveFromCache(c.Request.Host, c.Request.URL.RequestURI())
+	c.Status(http.StatusAccepted)
 }
