@@ -10,10 +10,6 @@ FROM alpine
 WORKDIR /cfwidget
 
 COPY --from=builder /go/bin/cfwidget /go/bin/cfwidget
-COPY --from=builder /cfwidget/favicon.ico /cfwidget/favicon.ico
-COPY --from=builder /cfwidget/css /cfwidget/css
-COPY --from=builder /cfwidget/js /cfwidget/js
-COPY --from=builder /cfwidget/templates /cfwidget/templates
 
 EXPOSE 8080
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/cfwidget/cfwidget/widget"
@@ -14,7 +15,6 @@ import (
 	"html/template"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -24,20 +24,27 @@ type ApiWebResponse struct {
 	Accepted bool   `json:"accepted,omitempty"`
 }
 
-var AllowedFiles = []string{"favicon.ico", "css/app.css"}
-
 const AuthorPath = "author/"
 
 var templateEngine *template.Template
-
 var messagePrinter = message.NewPrinter(language.English)
 
+//go:embed favicon.ico
+var faviconFile []byte
+
+//go:embed css/app.css
+var cssFile []byte
+
+//go:embed templates/*
+var templates embed.FS
+
 func RegisterApiRoutes(e *gin.Engine) {
-	templates, err := template.New("").ParseGlob("templates/*.tmpl")
+	var err error
+	templateEngine, err = template.New("").ParseFS(templates, "templates/*.tmpl")
 	if err != nil {
 		panic(err)
 	}
-	templateEngine = templates
+
 	e.SetHTMLTemplate(templateEngine)
 
 	e.GET("/*projectPath", setTransaction, readFromCache, Resolve, GetAuthor, GetProject)
@@ -67,24 +74,15 @@ func Resolve(c *gin.Context) {
 		}
 	}
 
-	for _, v := range AllowedFiles {
-		if v == path {
-			var contentType string
-			if strings.HasSuffix(v, ".css") {
-				contentType = "text/css"
-			} else if strings.HasSuffix(v, ".ico") {
-				contentType = "image/x-icon"
-			}
-
-			file, _ := os.ReadFile(v)
-			SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, contentType, file)
-			c.Data(http.StatusOK, contentType, file)
-			c.Abort()
-			return
-		}
-	}
-
-	if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
+	if path == "favicon.ico" {
+		c.Data(http.StatusOK, "image/x-icon", faviconFile)
+		c.Abort()
+		return
+	} else if path == "css/app.css" {
+		c.Data(http.StatusOK, "text/css", cssFile)
+		c.Abort()
+		return
+	} else if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
 		SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusNotFound, "", nil)
 		c.AbortWithStatus(http.StatusNotFound)
 		return
