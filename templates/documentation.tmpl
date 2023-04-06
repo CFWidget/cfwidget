@@ -56,12 +56,20 @@
         <pre class="ma0 pa0 f6">[widget="1.6.4"]59903[/widget]</pre>
         <p>
             Embed a widget on the web using an iframe, which
-            accepts the project path and an optional version parameter.
+            accepts the project path and an optional version and loader parameter.
         </p>
         <pre class="ma0 pa0 f6 overflow"
              style="white-space: initial;">&lt;iframe src="https://www.cfwidget.com/59903?version=1.6.4" width="100%" style="border: none;"&gt;&lt;/iframe&gt;</pre>
+        <iframe src="https://www.cfwidget.com/59903?version=1.6.4" width="100%" style="border: none;"></iframe>
+
+        <p>
+            Embed an image anywhere using a PNG, which accepts the same parameters.
+        </p>
+        <pre class="ma0 pa0 f6">https://dev.cfwidget.com/59903.png</pre>
+        <img src="https://dev.cfwidget.com/59903.png">
     </div>
 </div>
+
 <div class="measure-wide center pv3 mb5 ph4 ph0-l" id="documentation">
     <h2 id="documentation:contact">Contact</h2>
     <p>
@@ -71,7 +79,7 @@
     <h2 id="documentation:about">API</h2>
     <p>
         The CurseForge Widget API is available over https at
-        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">api.cfwidget.com</code>. Project details can be retrieved
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://api.cfwidget.com</code>. Project details can be retrieved
         by making a GET request to this endpoint where the path of your request is a current CurseForge
         project path or a project id.
     </p>
@@ -79,10 +87,10 @@
         <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/32274
         </code>
+        <br />
         <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/minecraft/mc-mods/journeymap
         </code>
-
 
     <pre class="f6">
 {
@@ -108,6 +116,7 @@
         <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/author/9422784
         </code>
+        <br />
         <code class="roboto-mono f6" style="word-break: break-all;">
             <span class="b">GET</span> https://api.cfwidget.com/author/search/MysticDrew
         </code>
@@ -128,6 +137,21 @@
 }
       </pre>
     </p>
+
+    <h2 id="documentation:version">Images</h2>
+    <p>
+        The CurseForge Widget API is available over https at
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://cfwidget.com</code>. An image representing
+        basic data of the project and the latest file is available by passing the project id and any
+        <a class="link curse-orange" href="#documentation:parameters">optional parameters</a>.
+    </p>
+
+    <p>
+        <code class="roboto-mono f6" style="word-break: break-all;">
+            <span class="b">GET</span> https://cfwidget.com/32274.png
+        </code>
+    </p>
+
     <h2 id="documentation:version">Download</h2>
     <p>
         Each response includes a <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">download</code> object which
@@ -135,7 +159,8 @@
         <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">release</code>, with a fallback to
         <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">beta</code> and then
         <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">alpha</code> if no acceptable file can be found.
-    </p>
+
+    <h2 id="documentation:parameters">Parameters</h2>
     <p>
         An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">version</code> parameter can be included
         when making a request, this will determine which file is used as the download. You may pass a version number,
@@ -219,7 +244,7 @@
         Data is served from a local database which is populated by extracting data
         from the CurseForge 3rd Party API. Project data is only updated when a call
         is made from a consumer to either authors or projects. A consumer can
-        determine data freshness using the last_fetch response value.
+        determine data freshness using the <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">last_fetch</code> response value.
     </p>
     <p>
     <h2 id="documentation:limits">Limits</h2>
@@ -242,6 +267,13 @@
         consumers should be mindful that it is possible that at some point in
         future data you depend on now may no longer be available and should
         integrate accordingly.
+    </p>
+
+    <p>
+        As of May 1st, 2023, a new endpoint was added that allows rendering a simple widget as an image. URLs using
+        www.cfwidget.com will now return HTML data. If JSON is needed, use api.cfwidget.com instead. The preferred endpoints
+        to use will be cfwidget.com and api.cfwidget.com, where cfwidget.com will return HTML and PNG data, while
+        api.cfwidget.com will return JSON data.
     </p>
 
     <p>
@@ -333,12 +365,10 @@
 
     <h2 id="privacy">Privacy</h2>
     <p>
-        All traffic is routed through Cloudflare, which follows the <a class="link curse-orange"
-                                                                       href="https://www.cloudflare.com/privacypolicy/">
-            Cloudflare Privacy Policy.</a>
+        All traffic is routed through Cloudflare, which follows the
+        <a class="link curse-orange" href="https://www.cloudflare.com/privacypolicy/">Cloudflare Privacy Policy</a>.
         No identifiable information is logged or stored on the backend servers.
     </p>
 </div>
-<script src="/js/app.js"></script>
 </body>
 </html>

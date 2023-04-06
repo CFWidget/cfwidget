@@ -37,10 +37,13 @@ var (
 )
 
 func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context.Context) ([]byte, error) {
-	span, spanCtx := apm.StartSpan(ctx, "generateImage", "custom")
-	defer span.End()
+	thumbnail, err := curseforge.GetThumbnail(project.Thumbnail, ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	var err error
+	span, _ := apm.StartSpan(ctx, "generateImage", "custom")
+	defer span.End()
 
 	gameName := project.Game
 	game := curseforge.GetGameBySlug(gameName)
@@ -97,11 +100,6 @@ func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context
 	}
 
 	output := new(bytes.Buffer)
-
-	thumbnail, err := curseforge.GetThumbnail(project.Thumbnail, spanCtx)
-	if err != nil {
-		return nil, err
-	}
 
 	//scale thumbnail to a constant size
 	scaled := image.NewRGBA(image.Rect(0, 0, ThumbnailSize, ThumbnailSize))

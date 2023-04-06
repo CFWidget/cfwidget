@@ -24,7 +24,7 @@ type ApiWebResponse struct {
 	Accepted bool   `json:"accepted,omitempty"`
 }
 
-var AllowedFiles = []string{"js/app.js", "favicon.ico", "css/app.css"}
+var AllowedFiles = []string{"favicon.ico", "css/app.css"}
 
 const AuthorPath = "author/"
 
@@ -70,9 +70,7 @@ func Resolve(c *gin.Context) {
 	for _, v := range AllowedFiles {
 		if v == path {
 			var contentType string
-			if strings.HasSuffix(v, ".js") {
-				contentType = "application/javascript"
-			} else if strings.HasSuffix(v, ".css") {
+			if strings.HasSuffix(v, ".css") {
 				contentType = "text/css"
 			} else if strings.HasSuffix(v, ".ico") {
 				contentType = "image/x-icon"
@@ -141,8 +139,7 @@ func GetProject(c *gin.Context) {
 		properties.Download = &latest
 	}
 
-	//if this is not the web side of the fence, redirect to the web side of the fence
-	if c.Request.Host != env.Get("WEB_HOSTNAME") {
+	if c.Request.Host == env.Get("API_HOSTNAME") {
 		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), project.Status, "application/json", properties)
 		cacheHeaders(c, cacheExpireTime)
 		c.JSON(project.Status, properties)
