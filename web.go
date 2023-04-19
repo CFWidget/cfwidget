@@ -205,7 +205,7 @@ func handleResolveProject(c *gin.Context, path string) {
 	if id, err = cast.ToUintE(path); err == nil {
 		//the url is actually the id, so i can provide the JSON directly
 		//this also fixes the author endpoint when you query with that ID
-		err = db.Where("curse_id = ?", id).First(&project).Error
+		err = db.Where("curse_id = ? AND status = ?", id, http.StatusOK).First(&project).Error
 
 		if err == gorm.ErrRecordNotFound || project.ID == 0 {
 			project.CurseId = &id
