@@ -136,17 +136,10 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 	newProps.Thumbnail = addon.Logo.ThumbnailUrl
 
 	for _, v := range addon.Authors {
-		var authorId uint
-
-		urls := authorIdRegex.FindStringSubmatch(v.Url)
-		if len(urls) < 2 {
-			authorId = v.Id
-		}
-		authorId = cast.ToUint(urls[1])
 		newProps.Members = append(newProps.Members, widget.ProjectMember{
 			Username: v.Name,
 			Title:    coalesce("Owner"),
-			Id:       authorId,
+			Id:       v.Id,
 		})
 	}
 
