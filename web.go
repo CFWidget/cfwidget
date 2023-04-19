@@ -256,7 +256,7 @@ func handleResolveProject(c *gin.Context, path string) {
 	}
 
 	//resync project if older than X time
-	if project.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
+	if project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) || project.Status == http.StatusAccepted {
 		temp := SyncProject(project.ID, ctx)
 		if temp != nil {
 			project = temp
