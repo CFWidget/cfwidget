@@ -73,7 +73,7 @@ func (consumer *AddProjectConsumer) Consume(url string, ctx context.Context) *wi
 
 	if project.CurseId != nil && *project.CurseId != 0 {
 		var count int64
-		err = db.Model(&widget.Project{}).Where("curse_id = ? AND status = ?", project.CurseId, http.StatusOK).Count(&count).Error
+		err = db.Model(&widget.Project{}).Where("curse_id = ? AND status IN (?, ?)", project.CurseId, http.StatusOK, http.StatusForbidden).Count(&count).Error
 		if err != nil {
 			panic(err)
 		}
