@@ -17,15 +17,16 @@ import (
 	"math"
 )
 
-const ThumbnailSize = 128
+const ThumbnailSize = 256
 
 var (
 	//dpi              = flag.Float64("dpi", 72, "screen resolution in Dots Per Inch")
 	//size             = flag.Float64("size", 16, "font size in points")
 	//spacing          = flag.Float64("spacing", 1.5, "line spacing (e.g. 2 means double spaced)")
-	dpi     float64 = 72
-	size    float64 = 16
-	spacing float64 = 1.5
+	dpi              float64 = 144
+	size             float64 = 16
+	spacing          float64 = 1.5
+	thumbnailPadding int     = 8
 
 	//go:embed FreeSans.ttf
 	regularFontData []byte
@@ -36,10 +37,24 @@ var (
 	boldFont     = getFont(boldFontData)
 )
 
-func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context.Context) ([]byte, error) {
-	thumbnail, err := curseforge.GetThumbnail(project.Thumbnail, ctx)
-	if err != nil {
-		return nil, err
+type ImageRequest struct {
+	DarkMode    bool
+	Transparent bool
+	NoThumbnail bool
+}
+
+func generateImage(project *widget.ProjectProperties, request ImageRequest, ctx context.Context) ([]byte, error) {
+	thumbnailSize := ThumbnailSize
+
+	var thumbnail image.Image
+	var err error
+	if request.NoThumbnail {
+		thumbnailSize = 0
+	} else {
+		thumbnail, err = curseforge.GetThumbnail(project.Thumbnail, ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	span, _ := apm.StartSpan(ctx, "generateImage", "custom")
@@ -101,34 +116,46 @@ func generateImage(project *widget.ProjectProperties, darkMode bool, ctx context
 
 	output := new(bytes.Buffer)
 
-	//scale thumbnail to a constant size
-	scaled := image.NewRGBA(image.Rect(0, 0, ThumbnailSize, ThumbnailSize))
-	draw.BiLinear.Scale(scaled, scaled.Rect, thumbnail, thumbnail.Bounds(), draw.Over, nil)
-
 	//prepare white box as final result
-	finalImage := image.NewRGBA(image.Rect(0, 0, 600, 144))
+	imageXSize := 928 + thumbnailPadding
+	imageYSize := ThumbnailSize //use original size for our heights
+	if !request.NoThumbnail {
+		imageXSize = imageXSize + thumbnailSize + thumbnailPadding
+		imageYSize = imageYSize + (2 * thumbnailPadding)
+	}
+
+	finalImage := image.NewRGBA(image.Rect(0, 0, imageXSize, imageYSize))
 
 	bgColor := image.White
-	if darkMode {
+	if request.DarkMode {
 		bgColor = image.Black
 	}
 
-	draw.Draw(finalImage, finalImage.Bounds(), bgColor, image.Point{X: 0, Y: 0}, draw.Src)
-	draw.Draw(finalImage, image.Rect(0, 0, (8*2)+ThumbnailSize, (8*2)+ThumbnailSize), bgColor, image.Point{X: 0, Y: 0}, draw.Src)
+	if !request.Transparent {
+		draw.Draw(finalImage, finalImage.Bounds(), bgColor, image.Point{X: 0, Y: 0}, draw.Src)
+		draw.Draw(finalImage, image.Rect(0, 0, (thumbnailPadding*2)+thumbnailSize, (thumbnailPadding*2)+thumbnailSize), bgColor, image.Point{X: 0, Y: 0}, draw.Src)
+	}
 
 	//add thumbnail image
-	draw.Draw(finalImage, image.Rect(8, 8, 8+ThumbnailSize, 8+ThumbnailSize), scaled, image.Point{X: 0, Y: 0}, draw.Src)
+	if !request.NoThumbnail {
+		scaled := image.NewRGBA(image.Rect(0, 0, thumbnailSize, thumbnailSize))
+		draw.BiLinear.Scale(scaled, scaled.Rect, thumbnail, thumbnail.Bounds(), draw.Over, nil)
+		draw.Draw(finalImage, image.Rect(thumbnailPadding, thumbnailPadding, thumbnailPadding+thumbnailSize, thumbnailPadding+thumbnailSize), scaled, image.Point{X: 0, Y: 0}, draw.Src)
+	}
 
 	d := &font.Drawer{
 		Dst: finalImage,
 		Src: image.Black,
 	}
 
-	if darkMode {
+	if request.DarkMode {
 		d.Src = image.White
 	}
 
-	textOffset := ThumbnailSize + 8 + 8
+	textOffset := thumbnailSize + (thumbnailPadding * 2)
+	if request.NoThumbnail {
+		textOffset = thumbnailPadding
+	}
 	y := 10 + int(math.Ceil(size*dpi/72))
 	dy := int(math.Ceil(size * spacing * dpi / 72))
 	d.Dot = fixed.P(textOffset, y)

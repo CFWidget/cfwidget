@@ -144,9 +144,17 @@ func GetProject(c *gin.Context) {
 	} else {
 		path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
 		if strings.HasSuffix(path, ".png") {
-			_, darkMode := c.GetQuery("dark")
+			_, dark := c.GetQuery("dark")
+			_, transparent := c.GetQuery("transparent")
+			_, nuThumb := c.GetQuery("noThumbnail")
 
-			data, err := generateImage(properties, darkMode, c.Request.Context())
+			imageRequest := ImageRequest{
+				DarkMode:    dark,
+				Transparent: transparent,
+				NoThumbnail: nuThumb,
+			}
+
+			data, err := generateImage(properties, imageRequest, c.Request.Context())
 			if err != nil {
 				log.Print(err)
 				c.AbortWithStatus(http.StatusInternalServerError)
