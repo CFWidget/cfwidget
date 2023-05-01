@@ -223,84 +223,60 @@ func handleResolveProject(c *gin.Context, path string) {
 		path = "minecraft/mc-mods/" + strings.TrimPrefix(path, "mc-mods/minecraft/")
 	}
 
-	project := &widget.Project{}
-	var id uint
+	lookup := &widget.ProjectLookup{Path: path}
 
-	if id, err = cast.ToUintE(path); err == nil {
-		//the url is actually the id, so i can provide the JSON directly
+	if id, err := cast.ToUintE(path); err == nil {
+		//the url is actually the id, so can provide the JSON directly
 		//this also fixes the author endpoint when you query with that ID
-		err = db.Where("curse_id = ?", id).First(&project).Error
-
-		if err == gorm.ErrRecordNotFound || project.ID == 0 {
-			project.CurseId = &id
-		}
+		lookup.CurseId = &id
 	} else {
 		//the path given is just a path, we need to resolve it to a project
-		err = db.Where("path = ?", path).First(&project).Error
-	}
+		err = db.Where(lookup).First(&lookup).Error
 
-	//if the record doesn't exist, queue it to be located
-	if err == gorm.ErrRecordNotFound || project.ID == 0 {
-		//create the record directly, then submit to processor
-		project.Path = path
-		project.Status = http.StatusAccepted
-
-		err = db.Create(&project).Error
-		if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			lookup.CurseId = addProjectConsumer.Consume(path, ctx)
+			err = db.Save(&lookup).Error
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
+			}
+		} else if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 			return
 		}
 
-		temp := addProjectConsumer.Consume(path, ctx)
-		if temp != nil {
-			project = temp
+		if lookup.CurseId == nil {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
 		}
 	}
 
-	//if we have a different error, inform caller
-	if err != nil {
+	project := &widget.Project{
+		CurseId: *lookup.CurseId,
+	}
+	err = db.First(&project).Error
+
+	if err == gorm.ErrRecordNotFound || project.ParsedProjects == nil || project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) {
+		project = SyncProject(project.CurseId, ctx)
+	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return
 	}
 
-	//resync project if older than X time
-	if project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) || project.Status == http.StatusAccepted {
-		temp := SyncProject(project.ID, ctx)
-		if temp != nil {
-			project = temp
-		}
+	if project == nil || project.CurseId == 0 {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
 	switch project.Status {
-	case 403:
-		fallthrough
 	case 404:
 		{
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
-	case 301:
+	case 403:
 		fallthrough
-	case 302:
-		{
-			//this project is actually pointing elsewhere, we need to find the correct one instead
-			redirect := &widget.Project{}
-			err = db.Where("curse_id = ? AND status = 200", project.CurseId).First(&redirect).Error
-			if err == gorm.ErrRecordNotFound || redirect.ID == 0 {
-				//uh........ how can we have a project redirect but no other project.....
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: "project indicates redirect but none found"})
-				return
-			}
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
-				return
-			}
-			c.Set("project", redirect)
-		}
 	case 200:
 		c.Set("project", project)
-	case 202:
-		c.AbortWithStatusJSON(http.StatusOK, ApiWebResponse{Accepted: true})
 	default:
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: fmt.Sprintf("project status is unknown (%d)", project.Status)})
 	}
@@ -338,7 +314,7 @@ func handleResolveAuthor(c *gin.Context, path string) {
 	}
 
 	if author.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
-		temp := syncAuthorConsumer.Consume(author.Id, ctx)
+		temp := syncAuthorConsumer.Consume(author.MemberId, ctx)
 		if temp != nil {
 			author = temp
 		}

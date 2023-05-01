@@ -7,11 +7,9 @@ import (
 	"fmt"
 	"github.com/cfwidget/cfwidget/curseforge"
 	"github.com/cfwidget/cfwidget/env"
-	"github.com/cfwidget/cfwidget/widget"
 	"github.com/spf13/cast"
 	"go.elastic.co/apm/v2"
 	"log"
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -21,7 +19,7 @@ var FullPathWithId = regexp.MustCompile("[a-zA-Z\\-]+/[a-zA-Z\\-]+/([0-9]+)")
 
 type AddProjectConsumer struct{}
 
-func (consumer *AddProjectConsumer) Consume(url string, ctx context.Context) *widget.Project {
+func (consumer *AddProjectConsumer) Consume(url string, ctx context.Context) *uint {
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -34,68 +32,29 @@ func (consumer *AddProjectConsumer) Consume(url string, ctx context.Context) *wi
 		log.Printf("Resolving path %s", url)
 	}
 
-	var curseId uint
-
-	db, err := GetDatabase()
-	if err != nil {
-		panic(err)
-	}
-
-	db = db.WithContext(ctx)
-
-	project := &widget.Project{}
-	err = db.Where("path = ?", url).Find(&project).Error
-	if err != nil {
-		panic(err)
-	}
-
 	//if the path is just an id, that's the curse id
 	//otherwise..... we can try a search....?
-	if curseId, err = cast.ToUintE(url); err == nil {
-		project.CurseId = &curseId
+	if curseId, err := cast.ToUintE(url); err == nil {
+		return &curseId
 	} else if matches := FullPathWithId.FindStringSubmatch(url); len(matches) > 0 {
 		curseId = cast.ToUint(matches[1])
-		project.CurseId = &curseId
+		return &curseId
 	} else {
 		//for now, we can't resolve, so mark as 404
-		id, err := resolveSlug(url)
-		if id == 0 {
-			project.Status = http.StatusNotFound
-			err = db.Save(project).Error
-			if err != nil {
-				panic(err)
-			}
-			return project
-		} else {
-			project.CurseId = &id
-		}
-	}
-
-	if project.CurseId != nil && *project.CurseId != 0 {
-		var count int64
-		err = db.Model(&widget.Project{}).Where("curse_id = ? AND status = ?", project.CurseId, http.StatusOK).Count(&count).Error
+		id, err := resolveSlug(url, ctx)
 		if err != nil {
 			panic(err)
 		}
-		if count > 0 {
-			project.Status = http.StatusMovedPermanently
+		if id != 0 {
+			return &id
 		}
 	}
 
-	err = db.Save(project).Error
-	if err != nil {
-		panic(err)
-	}
-
-	if project.Status == http.StatusMovedPermanently {
-		return project
-	}
-
-	return SyncProject(project.ID, ctx)
+	return nil
 }
 
-func resolveSlug(path string) (uint, error) {
-	span, ctx := apm.StartSpan(context.Background(), "resolveSlug", "custom")
+func resolveSlug(path string, c context.Context) (uint, error) {
+	span, ctx := apm.StartSpan(c, "resolveSlug", "custom")
 	defer span.End()
 
 	var err error
