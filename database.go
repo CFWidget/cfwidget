@@ -50,6 +50,11 @@ func GetDatabase() (*gorm.DB, error) {
 			{
 				ID: "1682972228",
 				Migrate: func(g *gorm.DB) (err error) {
+					if !g.Migrator().HasTable("projects") {
+						err = g.AutoMigrate(&widget.Project{}, &widget.Author{}, &widget.ProjectLookup{})
+						return
+					}
+
 					//move old tables away, because they are now considered dead
 					err = g.Migrator().RenameTable("projects", "old_projects")
 					if err != nil {

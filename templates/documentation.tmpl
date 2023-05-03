@@ -59,14 +59,14 @@
             accepts the project path and an optional version and loader parameter.
         </p>
         <pre class="ma0 pa0 f6 overflow"
-             style="white-space: initial;">&lt;iframe src="https://www.cfwidget.com/59903?version=1.6.4" width="100%" style="border: none;"&gt;&lt;/iframe&gt;</pre>
-        <iframe src="https://www.cfwidget.com/59903?version=1.6.4" width="100%" style="border: none;"></iframe>
+             style="white-space: initial;">&lt;iframe src="https://{{.WEB_HOSTNAME}}/59903?version=1.6.4" width="100%" style="border: none;"&gt;&lt;/iframe&gt;</pre>
+        <iframe src="https://{{.WEB_HOSTNAME}}/59903?version=1.6.4" width="100%" style="border: none;"></iframe>
 
         <p>
             Embed an image anywhere using a PNG, which accepts the same parameters.
         </p>
-        <pre class="ma0 pa0 f6">https://dev.cfwidget.com/59903.png</pre>
-        <img src="https://dev.cfwidget.com/59903.png">
+        <pre class="ma0 pa0 f6">https://{{.WEB_HOSTNAME}}/59903.png</pre>
+        <img src="https://{{.WEB_HOSTNAME}}/59903.png">
     </div>
 </div>
 
@@ -79,17 +79,17 @@
     <h2 id="documentation:about">API</h2>
     <p>
         The CurseForge Widget API is available over https at
-        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://api.cfwidget.com</code>. Project details can be retrieved
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://{{.API_HOSTNAME}}</code>. Project details can be retrieved
         by making a GET request to this endpoint where the path of your request is a current CurseForge
         project path or a project id.
     </p>
     <p>
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://api.cfwidget.com/32274
+            <span class="b">GET</span> https://{{.API_HOSTNAME}}/32274
         </code>
         <br />
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://api.cfwidget.com/minecraft/mc-mods/journeymap
+            <span class="b">GET</span> https://{{.API_HOSTNAME}}/minecraft/mc-mods/journeymap
         </code>
 
     <pre class="f6">
@@ -114,11 +114,11 @@
     </p>
     <p>
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://api.cfwidget.com/author/9422784
+            <span class="b">GET</span> https://{{.API_HOSTNAME}}/author/9422784
         </code>
         <br />
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://api.cfwidget.com/author/search/MysticDrew
+            <span class="b">GET</span> https://{{.API_HOSTNAME}}/author/search/MysticDrew
         </code>
     <pre class="f6">
 {
@@ -141,16 +141,30 @@
     <h2 id="documentation:version">Images</h2>
     <p>
         The CurseForge Widget API is available over https at
-        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://cfwidget.com</code>. An image representing
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://{{.WEB_HOSTNAME}}</code>. An image representing
         basic data of the project and the latest file is available by passing the project id and any
         <a class="link curse-orange" href="#documentation:parameters">optional parameters</a>.
     </p>
 
     <p>
         <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://cfwidget.com/32274.png
+            <span class="b">GET</span> https://{{.WEB_HOSTNAME}}/32274.png
         </code>
     </p>
+    <p>
+        Extra parameters can be provided to alter the image being generated.
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">dark</span>
+            Generates an image with a black background and white text
+        </li>
+        <li><span class="robot-mono b curse-orange">transparent</span>
+            Generates an image with the background being transparent instead of black/white
+        </li>
+        <li><span class="robot-mono b curse-orange">noThumbnail</span>
+            Removes the thumbnail from the resulting image.
+        </li>
+    </ul>
 
     <h2 id="documentation:version">Download</h2>
     <p>
@@ -270,10 +284,10 @@
     </p>
 
     <p>
-        As of May 1st, 2023, a new endpoint was added that allows rendering a simple widget as an image. URLs using
-        www.cfwidget.com will now return HTML data. If JSON is needed, use api.cfwidget.com instead. The preferred endpoints
-        to use will be cfwidget.com and api.cfwidget.com, where cfwidget.com will return HTML and PNG data, while
-        api.cfwidget.com will return JSON data.
+        As of May 3st, 2023, a new endpoint was added that allows rendering a simple widget as an image. URLs using
+        www.{{.WEB_HOSTNAME}} will now return HTML data. If JSON is needed, use {{.API_HOSTNAME}} instead. The preferred endpoints
+        to use will be {{.WEB_HOSTNAME}} and {{.API_HOSTNAME}}, where {{.WEB_HOSTNAME}} will return HTML and PNG data, while
+        {{.API_HOSTNAME}} will return JSON data.
     </p>
 
     <p>

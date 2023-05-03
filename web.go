@@ -63,7 +63,10 @@ func Resolve(c *gin.Context) {
 			return
 		} else {
 			buf := &bytes.Buffer{}
-			_ = templateEngine.ExecuteTemplate(buf, "documentation.tmpl", gin.H{})
+			_ = templateEngine.ExecuteTemplate(buf, "documentation.tmpl", gin.H{
+				"WEB_HOSTNAME": env.Get("WEB_HOSTNAME"),
+				"API_HOSTNAME": env.Get("API_HOSTNAME"),
+			})
 			data := buf.Bytes()
 
 			SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
