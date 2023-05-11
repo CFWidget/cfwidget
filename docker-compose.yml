@@ -15,6 +15,7 @@ services:
       DEBUG: "false"
       CORE_KEY_FILE: "/run/secrets/core_key"
       WEB_HOSTNAME: "${WEB_HOST}"
+      API_HOSTNAME: "${API_HOST}"
       CACHE_TTL: "1h"
     secrets:
       - core_key
@@ -25,13 +26,13 @@ services:
     deploy:
       labels:
         - "traefik.enable=true"
-        - "traefik.http.routers.${SERVICE_NAME}.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`) || Host(`${ROOT_HOST}`)"
+        - "traefik.http.routers.${SERVICE_NAME}.rule=Host(`${WEB_HOST}`) || Host(`${API_HOST}`) || Host(`www.${WEB_HOST}`)"
         - "traefik.http.routers.${SERVICE_NAME}.entrypoints=websecure"
         - "traefik.http.routers.${SERVICE_NAME}.tls.certresolver=myresolver"
         - "traefik.http.services.${SERVICE_NAME}.loadbalancer.server.port=8080"
 
   database:
-    image: mariadb
+    image: mariadb:10.11
     restart: always
     environment:
       MYSQL_USER: widget

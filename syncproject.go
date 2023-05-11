@@ -21,7 +21,6 @@ import (
 var syncProjectConsumer SyncProjectConsumer
 
 var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\"")
-var authorIdRegex = regexp.MustCompile("https://www\\.curseforge\\.com/members/(?P<ID>[0-9]+)-")
 
 var NoProjectError = errors.New("no such project")
 var PrivateProjectError = errors.New("project private")
@@ -35,14 +34,14 @@ func SyncProject(id uint, ctx context.Context) *widget.Project {
 
 type SyncProjectConsumer struct{}
 
-func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widget.Project {
+func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) *widget.Project {
 	//let this handle how to mark the job
 	//if we get an error, it failed
 	//otherwise, it's fine
 	defer func() {
 		err := recover()
 		if err != nil {
-			log.Printf("Error syncing project %d: %s\n%s", id, err, debug.Stack())
+			log.Printf("Error syncing project %d: %s\n%s", curseId, err, debug.Stack())
 		}
 	}()
 
@@ -54,28 +53,18 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 
 	// perform task
 	if env.GetBool("DEBUG") {
-		log.Printf("Syncing project %d", id)
+		log.Printf("Syncing project %d", curseId)
 	}
 
-	project := &widget.Project{}
-	err = db.First(project, id).Error
-	if err != nil {
+	project := &widget.Project{
+		CurseId: curseId,
+	}
+	err = db.First(project).Error
+	if err != nil && err != gorm.ErrRecordNotFound {
 		panic(err)
 	}
 
-	if project.CurseId == nil {
-		project.Status = 404
-		err = db.Save(project).Error
-		if err != nil {
-			panic(err)
-		}
-		return project
-	}
-
-	var curseId *uint
-	curseId = project.CurseId
-
-	addon, err := getAddonProperties(*curseId, ctx)
+	addon, err := getAddonProperties(curseId, ctx)
 	if err != nil {
 		if err == NoProjectError {
 			project.Status = 404
@@ -96,7 +85,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 		return project
 	}
 
-	description, err := getAddonDescription(*curseId, ctx)
+	description, err := getAddonDescription(curseId, ctx)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		panic(err)
 	}
@@ -145,7 +134,7 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 
 	//files!!!!
 	//we have to call their API to get this stuff
-	files, err := curseforge.GetFiles(*curseId, ctx)
+	files, err := curseforge.GetFiles(curseId, ctx)
 	if err != nil && err != NoProjectError && err != PrivateProjectError {
 		newProps.Files = project.ParsedProjects.Files
 		log.Printf("Error getting files: %s\n%s", err, debug.Stack())
@@ -227,14 +216,14 @@ func (consumer *SyncProjectConsumer) Consume(id uint, ctx context.Context) *widg
 		}
 		exists := false
 		for _, e := range author.ParsedProjects.Projects {
-			if e.Id == *project.CurseId {
+			if e.Id == project.CurseId {
 				exists = true
 				break
 			}
 		}
 		if !exists {
 			author.ParsedProjects.Projects = append(author.ParsedProjects.Projects, widget.AuthorProject{
-				Id:   *project.CurseId,
+				Id:   project.CurseId,
 				Name: project.ParsedProjects.Title,
 			})
 

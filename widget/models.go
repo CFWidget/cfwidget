@@ -8,15 +8,20 @@ import (
 )
 
 type Project struct {
-	ID         uint    `gorm:"primaryKey"`
-	CurseId    *uint   `gorm:"index:;index:idx_curseid_status"`
-	Path       string  `gorm:"uniqueIndex;type:VARCHAR(191) COLLATE utf8mb3_unicode_ci"`
+	CurseId    uint    `gorm:"column:id;primaryKey"`
 	Properties *string `gorm:"type:LONGTEXT COLLATE utf8mb4_bin"`
 	Status     int     `gorm:"index:;index:idx_status_updatedat;index:idx_curseid_status"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time `gorm:"index:;index:idx_status_updatedat"`
 
 	ParsedProjects *ProjectProperties `gorm:"-"`
+}
+
+type ProjectLookup struct {
+	Path      string `gorm:"primaryKey;type:VARCHAR(255) COLLATE utf8mb3_unicode_ci"`
+	CurseId   *uint
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (p *Project) AfterFind(*gorm.DB) error {
@@ -82,10 +87,9 @@ type ProjectFile struct {
 }
 
 type Author struct {
-	Id         uint   `gorm:"primaryKey"`
+	MemberId   uint   `gorm:"primaryKey"`
 	Username   string `gorm:"index"`
 	Properties *string
-	MemberId   uint `gorm:"index"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time `gorm:"index"`
 

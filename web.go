@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"embed"
 	"fmt"
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/cfwidget/cfwidget/widget"
@@ -12,8 +13,8 @@ import (
 	"golang.org/x/text/message"
 	"gorm.io/gorm"
 	"html/template"
+	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 )
@@ -23,26 +24,37 @@ type ApiWebResponse struct {
 	Accepted bool   `json:"accepted,omitempty"`
 }
 
-var AllowedFiles = []string{"js/app.js", "favicon.ico", "css/app.css"}
-
 const AuthorPath = "author/"
 
 var templateEngine *template.Template
+var messagePrinter = message.NewPrinter(language.English)
+
+//go:embed favicon.ico
+var faviconFile []byte
+
+//go:embed css/app.css
+var cssFile []byte
+
+//go:embed templates/*
+var templates embed.FS
 
 func RegisterApiRoutes(e *gin.Engine) {
-	templates, err := template.New("").ParseGlob("templates/*.tmpl")
+	var err error
+	templateEngine, err = template.New("").ParseFS(templates, "templates/*.tmpl")
 	if err != nil {
 		panic(err)
 	}
-	templateEngine = templates
+
 	e.SetHTMLTemplate(templateEngine)
 
 	e.GET("/*projectPath", setTransaction, readFromCache, Resolve, GetAuthor, GetProject)
+	e.DELETE("/*projectPath", setTransaction, deleteFromCache)
 	e.POST("/:id", SyncCall)
 }
 
 func Resolve(c *gin.Context) {
 	path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
+	path = strings.TrimSuffix(path, ".png")
 
 	if path == "" {
 		//if this is not the web side of the fence, redirect to the web side of the fence
@@ -51,7 +63,10 @@ func Resolve(c *gin.Context) {
 			return
 		} else {
 			buf := &bytes.Buffer{}
-			_ = templateEngine.ExecuteTemplate(buf, "documentation.tmpl", gin.H{})
+			_ = templateEngine.ExecuteTemplate(buf, "documentation.tmpl", gin.H{
+				"WEB_HOSTNAME": env.Get("WEB_HOSTNAME"),
+				"API_HOSTNAME": env.Get("API_HOSTNAME"),
+			})
 			data := buf.Bytes()
 
 			SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
@@ -62,26 +77,15 @@ func Resolve(c *gin.Context) {
 		}
 	}
 
-	for _, v := range AllowedFiles {
-		if v == path {
-			var contentType string
-			if strings.HasSuffix(v, ".js") {
-				contentType = "application/javascript"
-			} else if strings.HasSuffix(v, ".css") {
-				contentType = "text/css"
-			} else if strings.HasSuffix(v, ".ico") {
-				contentType = "image/x-icon"
-			}
-
-			file, _ := os.ReadFile(v)
-			SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, contentType, file)
-			c.Data(http.StatusOK, contentType, file)
-			c.Abort()
-			return
-		}
-	}
-
-	if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
+	if path == "favicon.ico" {
+		c.Data(http.StatusOK, "image/x-icon", faviconFile)
+		c.Abort()
+		return
+	} else if path == "css/app.css" {
+		c.Data(http.StatusOK, "text/css", cssFile)
+		c.Abort()
+		return
+	} else if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
 		SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusNotFound, "", nil)
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -136,25 +140,48 @@ func GetProject(c *gin.Context) {
 		properties.Download = &latest
 	}
 
-	//if this is not the web side of the fence, redirect to the web side of the fence
-	if c.Request.Host != env.Get("WEB_HOSTNAME") {
+	if c.Request.Host == env.Get("API_HOSTNAME") {
 		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), project.Status, "application/json", properties)
 		cacheHeaders(c, cacheExpireTime)
 		c.JSON(project.Status, properties)
 	} else {
-		p := message.NewPrinter(language.English)
-		downloads := p.Sprintf("%d\n", properties.Downloads["total"])
+		path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
+		if strings.HasSuffix(path, ".png") {
+			_, dark := c.GetQuery("dark")
+			_, transparent := c.GetQuery("transparent")
+			_, nuThumb := c.GetQuery("noThumbnail")
 
-		buf := &bytes.Buffer{}
-		_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
-			"project":       properties,
-			"downloadCount": downloads,
-		})
-		data := buf.Bytes()
+			imageRequest := ImageRequest{
+				DarkMode:    dark,
+				Transparent: transparent,
+				NoThumbnail: nuThumb,
+			}
 
-		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
-		cacheHeaders(c, cacheExpireTime)
-		c.Data(http.StatusOK, "text/html", data)
+			data, err := generateImage(properties, imageRequest, c.Request.Context())
+			if err != nil {
+				log.Print(err)
+				c.AbortWithStatus(http.StatusInternalServerError)
+				return
+			}
+
+			cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "image/png", data)
+			cacheHeaders(c, cacheExpireTime)
+
+			c.Data(http.StatusOK, "image/png", data)
+		} else {
+			downloads := messagePrinter.Sprintf("%d\n", properties.Downloads["total"])
+
+			buf := &bytes.Buffer{}
+			_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
+				"project":       properties,
+				"downloadCount": downloads,
+			})
+			data := buf.Bytes()
+
+			cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), http.StatusOK, "text/html", data)
+			cacheHeaders(c, cacheExpireTime)
+			c.Data(http.StatusOK, "text/html", data)
+		}
 	}
 	c.Abort()
 }
@@ -199,84 +226,60 @@ func handleResolveProject(c *gin.Context, path string) {
 		path = "minecraft/mc-mods/" + strings.TrimPrefix(path, "mc-mods/minecraft/")
 	}
 
-	project := &widget.Project{}
-	var id uint
+	lookup := &widget.ProjectLookup{Path: path}
 
-	if id, err = cast.ToUintE(path); err == nil {
-		//the url is actually the id, so i can provide the JSON directly
+	if id, err := cast.ToUintE(path); err == nil {
+		//the url is actually the id, so can provide the JSON directly
 		//this also fixes the author endpoint when you query with that ID
-		err = db.Where("curse_id = ? AND status = ?", id, http.StatusOK).First(&project).Error
-
-		if err == gorm.ErrRecordNotFound || project.ID == 0 {
-			project.CurseId = &id
-		}
+		lookup.CurseId = &id
 	} else {
 		//the path given is just a path, we need to resolve it to a project
-		err = db.Where("path = ?", path).First(&project).Error
-	}
+		err = db.Where(lookup).First(&lookup).Error
 
-	//if the record doesn't exist, queue it to be located
-	if err == gorm.ErrRecordNotFound || project.ID == 0 {
-		//create the record directly, then submit to processor
-		project.Path = path
-		project.Status = http.StatusAccepted
-
-		err = db.Create(&project).Error
-		if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			lookup.CurseId = addProjectConsumer.Consume(path, ctx)
+			err = db.Save(&lookup).Error
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
+			}
+		} else if err != nil {
 			c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 			return
 		}
 
-		temp := addProjectConsumer.Consume(path, ctx)
-		if temp != nil {
-			project = temp
+		if lookup.CurseId == nil {
+			c.AbortWithStatus(http.StatusNotFound)
+			return
 		}
 	}
 
-	//if we have a different error, inform caller
-	if err != nil {
+	project := &widget.Project{
+		CurseId: *lookup.CurseId,
+	}
+	err = db.First(&project).Error
+
+	if err == gorm.ErrRecordNotFound || project.ParsedProjects == nil || project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) {
+		project = SyncProject(project.CurseId, ctx)
+	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return
 	}
 
-	//resync project if older than X time
-	if project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) || project.Status == http.StatusAccepted {
-		temp := SyncProject(project.ID, ctx)
-		if temp != nil {
-			project = temp
-		}
-	}
-
+	if project == nil || project.CurseId == 0 {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+  } 
+  
 	switch project.Status {
-	case 403:
-		fallthrough
 	case 404:
 		{
 			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
-	case 301:
+	case 403:
 		fallthrough
-	case 302:
-		{
-			//this project is actually pointing elsewhere, we need to find the correct one instead
-			redirect := &widget.Project{}
-			err = db.Where("curse_id = ? AND status = 200", project.CurseId).First(&redirect).Error
-			if err == gorm.ErrRecordNotFound || redirect.ID == 0 {
-				//uh........ how can we have a project redirect but no other project.....
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: "project indicates redirect but none found"})
-				return
-			}
-			if err != nil {
-				c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
-				return
-			}
-			c.Set("project", redirect)
-		}
 	case 200:
 		c.Set("project", project)
-	case 202:
-		c.AbortWithStatusJSON(http.StatusOK, ApiWebResponse{Accepted: true})
 	default:
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: fmt.Sprintf("project status is unknown (%d)", project.Status)})
 	}
@@ -314,7 +317,7 @@ func handleResolveAuthor(c *gin.Context, path string) {
 	}
 
 	if author.UpdatedAt.Before(time.Now().Add(-1 * time.Hour)) {
-		temp := syncAuthorConsumer.Consume(author.Id, ctx)
+		temp := syncAuthorConsumer.Consume(author.MemberId, ctx)
 		if temp != nil {
 			author = temp
 		}
@@ -378,4 +381,9 @@ func setTransaction(c *gin.Context) {
 			trans.TransactionData.Context.SetLabel(v.Key, v.Value)
 		}
 	}
+}
+
+func deleteFromCache(c *gin.Context) {
+	RemoveFromCache(c.Request.Host, c.Request.URL.RequestURI())
+	c.Status(http.StatusAccepted)
 }

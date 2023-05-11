@@ -1,4 +1,4 @@
-FROM golang:1.17-alpine AS builder
+FROM golang:1.19-alpine AS builder
 
 WORKDIR /cfwidget
 COPY . .
@@ -10,10 +10,6 @@ FROM alpine
 WORKDIR /cfwidget
 
 COPY --from=builder /go/bin/cfwidget /go/bin/cfwidget
-COPY --from=builder /cfwidget/favicon.ico /cfwidget/favicon.ico
-COPY --from=builder /cfwidget/css /cfwidget/css
-COPY --from=builder /cfwidget/js /cfwidget/js
-COPY --from=builder /cfwidget/templates /cfwidget/templates
 
 EXPOSE 8080
 
@@ -22,10 +18,10 @@ ENV DB_HOST="" \
     DB_PASS="" \
     DB_DATABASE="" \
     DB_DEBUG="false" \
-    CACHE_TTL="5m" \
+    CACHE_TTL="1h" \
     CORE_KEY_FILE="/run/secrets/core_key" \
     CORE_KEY="" \
-    WEB_HOSTNAME="www.localhost" \
+    API_HOSTNAME="api.localhost:8080" \
     DEBUG="false" \
     GIN_MODE="release" \
     ELASTIC_APM_SERVER_URL="" \

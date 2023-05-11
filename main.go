@@ -41,6 +41,7 @@ func main() {
 	g.Go(func() error {
 		web := gin.New()
 		web.Use(apmgin.Middleware(web))
+		web.Use(gin.Recovery())
 
 		web.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
 			if param.Latency > time.Minute {
@@ -91,7 +92,7 @@ func main() {
 		}
 	}()
 
-	quit := make(chan os.Signal)
+	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server...")
