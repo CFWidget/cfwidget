@@ -268,8 +268,8 @@ func handleResolveProject(c *gin.Context, path string) {
 	if project == nil || project.CurseId == 0 {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
-	}
-
+  } 
+  
 	switch project.Status {
 	case 404:
 		{

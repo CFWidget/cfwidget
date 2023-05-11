@@ -40,7 +40,6 @@ func (consumer *AddProjectConsumer) Consume(url string, ctx context.Context) *ui
 		curseId = cast.ToUint(matches[1])
 		return &curseId
 	} else {
-		//for now, we can't resolve, so mark as 404
 		id, err := resolveSlug(url, ctx)
 		if err != nil {
 			panic(err)
