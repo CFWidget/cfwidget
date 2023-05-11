@@ -92,7 +92,7 @@ func (consumer *SyncAuthorConsumer) Consume(id uint, ctx context.Context) *widge
 		project := &widget.Project{}
 		//we check for a 403 because the project is "abandoned" and this breaks on the new API
 		//we will assume the list we have is still okay for them
-		err = db.Where("curse_id = ?", v.Id).First(project).Error
+		err = db.Where("id = ?", v.Id).First(project).Error
 		if err != nil && err != gorm.ErrRecordNotFound {
 			panic(err)
 		}
