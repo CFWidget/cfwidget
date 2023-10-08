@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/cfwidget/cfwidget/widget"
@@ -247,7 +248,7 @@ func handleResolveProject(c *gin.Context, path string) {
 		//the path given is just a path, we need to resolve it to a project
 		err = db.Where(lookup).First(&lookup).Error
 
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			lookup.CurseId = addProjectConsumer.Consume(path, ctx)
 			err = db.Save(&lookup).Error
 			if err != nil {
@@ -269,7 +270,7 @@ func handleResolveProject(c *gin.Context, path string) {
 	}
 	err = db.First(&project).Error
 
-	if err == gorm.ErrRecordNotFound || project.ParsedProjects == nil || project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) {
+	if errors.Is(err, gorm.ErrRecordNotFound) || project.ParsedProjects == nil || project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) {
 		project = SyncProject(project.CurseId, ctx)
 	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
@@ -279,8 +280,8 @@ func handleResolveProject(c *gin.Context, path string) {
 	if project == nil || project.CurseId == 0 {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
-  } 
-  
+	}
+
 	switch project.Status {
 	case 404:
 		{

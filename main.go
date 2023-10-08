@@ -72,7 +72,7 @@ func main() {
 
 		log.Printf("Starting web services\n")
 		err := webServer.ListenAndServe()
-		if err != nil && err != http.ErrServerClosed {
+		if err != nil {
 			log.Fatal(err)
 		}
 		return nil

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/cfwidget/cfwidget/widget"
@@ -93,12 +94,12 @@ func (consumer *SyncAuthorConsumer) Consume(id uint, ctx context.Context) *widge
 		//we check for a 403 because the project is "abandoned" and this breaks on the new API
 		//we will assume the list we have is still okay for them
 		err = db.Where("id = ?", v.Id).First(project).Error
-		if err != nil && err != gorm.ErrRecordNotFound {
-			panic(err)
-		}
-
-		if err == gorm.ErrRecordNotFound {
-			continue
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				continue
+			} else {
+				panic(err)
+			}
 		}
 
 		for _, m := range project.ParsedProjects.Members {

@@ -60,25 +60,22 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 		CurseId: curseId,
 	}
 	err = db.First(project).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		panic(err)
 	}
 
 	addon, err := getAddonProperties(curseId, ctx)
 	if err != nil {
-		if err == NoProjectError {
+		if errors.Is(err, NoProjectError) {
 			project.Status = 404
-			err = db.Save(project).Error
-			if err != nil {
-				panic(err)
-			}
-		} else if err == PrivateProjectError {
+		} else if errors.Is(err, PrivateProjectError) {
 			project.Status = 403
-			err = db.Save(project).Error
-			if err != nil {
-				panic(err)
-			}
 		} else {
+			panic(err)
+		}
+
+		err = db.Save(project).Error
+		if err != nil {
 			panic(err)
 		}
 
@@ -86,7 +83,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 	}
 
 	description, err := getAddonDescription(curseId, ctx)
-	if err != nil && err != NoProjectError && err != PrivateProjectError {
+	if err != nil && !errors.Is(err, NoProjectError) && !errors.Is(err, PrivateProjectError) {
 		panic(err)
 	}
 
@@ -135,7 +132,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 	//files!!!!
 	//we have to call their API to get this stuff
 	files, err := curseforge.GetFiles(curseId, ctx)
-	if err != nil && err != NoProjectError && err != PrivateProjectError {
+	if err != nil && !errors.Is(err, NoProjectError) && !errors.Is(err, PrivateProjectError) {
 		newProps.Files = project.ParsedProjects.Files
 		log.Printf("Error getting files: %s\n%s", err, debug.Stack())
 	}
@@ -202,18 +199,21 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 	for _, a := range project.ParsedProjects.Members {
 		var author widget.Author
 		err = db.Where("member_id = ?", a.Id).First(&author).Error
-		if err != nil && err != gorm.ErrRecordNotFound {
-			panic(err)
-		} else if err == gorm.ErrRecordNotFound {
-			author.Username = a.Username
-			author.MemberId = a.Id
-			temp := "{}"
-			author.Properties = &temp
-			err = db.Create(&author).Error
-			if err != nil {
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				author.Username = a.Username
+				author.MemberId = a.Id
+				temp := "{}"
+				author.Properties = &temp
+				err = db.Create(&author).Error
+				if err != nil {
+					panic(err)
+				}
+			} else {
 				panic(err)
 			}
 		}
+
 		exists := false
 		for _, e := range author.ParsedProjects.Projects {
 			if e.Id == project.CurseId {
@@ -282,7 +282,7 @@ func getAddonDescription(id uint, ctx context.Context) (description string, err 
 		return "", NoProjectError
 	} else if response.StatusCode == http.StatusForbidden {
 		return "", PrivateProjectError
-	} else if response.StatusCode != 200 {
+	} else if response.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(response.Body)
 		return description, errors.New(fmt.Sprintf("Error from CurseForge description for id %d: %s (%d)", id, string(body), response.StatusCode))
 	}
