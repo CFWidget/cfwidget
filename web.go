@@ -141,9 +141,20 @@ func GetProject(c *gin.Context) {
 	}
 
 	if c.Request.Host == env.Get("API_HOSTNAME") {
-		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), project.Status, "application/json", properties)
+		status := project.Status
+
+		//if our status is over 400, check if we have data. If we do, we can use that instead
+		if status > 400 {
+			if properties != nil {
+				status = http.StatusOK
+			} else {
+				status = http.StatusNotFound
+			}
+		}
+
+		cacheExpireTime := SetInCache(c.Request.Host, c.Request.URL.RequestURI(), status, "application/json", properties)
 		cacheHeaders(c, cacheExpireTime)
-		c.JSON(project.Status, properties)
+		c.JSON(status, properties)
 	} else {
 		path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
 		if strings.HasSuffix(path, ".png") {
