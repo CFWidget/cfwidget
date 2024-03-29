@@ -271,7 +271,10 @@ func handleResolveProject(c *gin.Context, path string) {
 	err = db.First(&project).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) || project.ParsedProjects == nil || project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) {
-		project = SyncProject(project.CurseId, ctx)
+		update, err := SyncProject(project.CurseId, ctx)
+		if err == nil {
+			project = update
+		}
 	} else if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, ApiWebResponse{Error: err.Error()})
 		return

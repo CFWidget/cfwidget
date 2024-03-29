@@ -27,36 +27,45 @@ var PrivateProjectError = errors.New("project private")
 
 var invalidVersions = []string{"Forge", "Fabric", "Quilt", "Rift"}
 
-func SyncProject(id uint, ctx context.Context) *widget.Project {
+func SyncProject(id uint, ctx context.Context) (*widget.Project, error) {
 	//just directly perform the call, we want this one now
 	return syncProjectConsumer.Consume(id, ctx)
 }
 
 type SyncProjectConsumer struct{}
 
-func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) *widget.Project {
+func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) (project *widget.Project, err error) {
+	db, err := GetDatabase()
+	if err != nil {
+		return nil, err
+	}
+	db = db.WithContext(ctx)
+
 	//let this handle how to mark the job
 	//if we get an error, it failed
 	//otherwise, it's fine
 	defer func() {
-		err := recover()
-		if err != nil {
-			log.Printf("Error syncing project %d: %s\n%s", curseId, err, debug.Stack())
+		e := recover()
+		if e != nil {
+			log.Printf("Error syncing project %d: %s\n%s", curseId, e, debug.Stack())
+			if project != nil {
+				project.Error = cast.ToString(e)
+				_ = db.Save(project).Error
+			}
+			if t, ok := e.(error); ok {
+				err = t
+			} else {
+				err = errors.New(cast.ToString(e))
+			}
 		}
 	}()
-
-	db, err := GetDatabase()
-	if err != nil {
-		panic(err)
-	}
-	db = db.WithContext(ctx)
 
 	// perform task
 	if env.GetBool("DEBUG") {
 		log.Printf("Syncing project %d", curseId)
 	}
 
-	project := &widget.Project{
+	project = &widget.Project{
 		CurseId: curseId,
 	}
 	err = db.First(project).Error
@@ -79,7 +88,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 			panic(err)
 		}
 
-		return project
+		return nil, err
 	}
 
 	description, err := getAddonDescription(curseId, ctx)
@@ -205,12 +214,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 				author.MemberId = a.Id
 				temp := "{}"
 				author.Properties = &temp
-				err = db.Create(&author).Error
-				if err != nil {
-					panic(err)
-				}
-			} else {
-				panic(err)
+				_ = db.Create(&author).Error
 			}
 		}
 
@@ -229,20 +233,17 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 
 			d, err = json.Marshal(author.ParsedProjects)
 			if err != nil {
-				panic(err)
+				continue
 			}
 
 			s = string(d)
 			author.Properties = &s
 
-			err = db.Save(&author).Error
-			if err != nil {
-				panic(err)
-			}
+			_ = db.Save(&author).Error
 		}
 	}
 
-	return project
+	return project, nil
 }
 
 func getAddonProperties(id uint, ctx context.Context) (addon curseforge.Addon, err error) {

@@ -13,6 +13,7 @@ type Project struct {
 	Status     int     `gorm:"index:;index:idx_status_updatedat;index:idx_curseid_status"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time `gorm:"index:;index:idx_status_updatedat"`
+	Error      string
 
 	ParsedProjects *ProjectProperties `gorm:"-"`
 }
