@@ -1,5 +1,8 @@
 {
     "chat.disableAIFeatures": true,
     "go.testTimeout": "5m",
-    "go.diagnostic.vulncheck": "Off"
+    "go.diagnostic.vulncheck": "Off",
+    "[css]": {
+        "editor.formatOnSave": false
+    }
 }

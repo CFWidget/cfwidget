@@ -8851,12 +8851,21 @@ img {
 
 #widget .wrapper {
     background-color: var(--wrapper-bg-color);
-    border: 2px solid #eee;
-    border-radius: 4px;
-    box-shadow: 1px 1px 0 #ccc, 2px 2px 2px #eee;
     margin-right: 2px;
     min-width: 560px;
     padding: 12px
+}
+
+#widget .wrapper.border-default {
+    border: 2px solid #eee;
+    border-radius: 4px;
+    box-shadow: 1px 1px 0 #ccc, 2px 2px 2px #eee;
+}
+
+#widget .wrapper.border-none {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 #widget .wrapper.error {
