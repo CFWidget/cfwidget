@@ -187,6 +187,7 @@ func GetProject(c *gin.Context) {
 			_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
 				"project":       properties,
 				"downloadCount": downloads,
+				"background":    c.DefaultQuery("background", "#fff"),
 			})
 			data := buf.Bytes()
 
