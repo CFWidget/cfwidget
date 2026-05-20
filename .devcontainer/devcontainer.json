@@ -1,0 +1,18 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/go",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"golang.Go",
+				"GitHub.vscode-github-actions",
+				"ms-azuretools.vscode-containers"
+			]
+		}
+	},
+	// Allow the devcontainer to run host docker commands, see https://github.com/devcontainers/templates/tree/main/src/docker-outside-of-docker
+    "features": {
+        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
+			"moby": false
+		}
+    }
+}
