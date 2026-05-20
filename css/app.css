@@ -8851,8 +8851,10 @@ img {
 
 #widget .wrapper {
     background-color: var(--wrapper-bg-color);
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
     margin-right: 2px;
-    min-width: 560px;
     padding: 12px
 }
 
@@ -8880,7 +8882,7 @@ img {
     background-position: 50%;
     background-repeat: no-repeat;
     background-size: contain;
-    float: left;
+    flex-shrink: 0;
     height: 116px;
     margin-right: 12px;
     width: 184px
@@ -8892,14 +8894,15 @@ img {
 }
 
 #widget .wrapper .meta {
-    float: left;
-    min-width: 340px
+    flex: 1;
+    min-width: 0
 }
 
 #widget .wrapper .line {
     display: block;
     white-space: nowrap;
-    overflow: hidden
+    overflow: hidden;
+    text-overflow: ellipsis
 }
 
 #widget .wrapper .meta .line.lead {
@@ -8917,6 +8920,9 @@ img {
 }
 
 #widget .wrapper .meta .line.bottom {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
     margin-top: 6px
 }
 
@@ -8956,16 +8962,17 @@ img {
     border: 1px solid #ea8f20;
     color: #222;
     display: block;
-    float: left;
     font-size: 12px;
     font-weight: 700;
     height: 30px;
     line-height: 18px;
-    margin-right: 2px;
+    min-width: 0;
+    overflow: hidden;
     padding: 5px 10px;
     position: relative;
     text-align: center;
     text-decoration: none;
+    text-overflow: ellipsis;
     vertical-align: middle;
     white-space: nowrap;
     width: auto
@@ -8978,11 +8985,10 @@ img {
 #widget .about-widget {
     color: #333;
     display: none;
-    float: right;
     font-size: 16px;
     font-weight: 700;
     height: 20px;
-    margin: -8px;
+    margin: -8px -8px -8px auto;
     width: 16px
 }
 
