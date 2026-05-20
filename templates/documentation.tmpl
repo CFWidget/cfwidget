@@ -172,19 +172,6 @@
                     class="roboto-mono bg-light-gray f6 ph2 pv1 br2">2288310</code>.
         </li>
     </ul>
-    <p>
-        An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">background</code> parameter can be included
-        when making a request. This will change the background color of the widget to accordingly. Warning though, this
-        will not update the font color, so black background will cause mostly unreadable text. For example:
-    </p>
-    <ul class="list pa0">
-        <li><span class="robot-mono b curse-orange">background=green</span>
-            Sets the background as green
-        </li>
-        <li><span class="robot-mono b curse-orange">background=%23400</span>
-            Sets the background as #400 (a dark shade of red)
-        </li>
-    </ul>
 
     <p>
         An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">loader</code> parameter can be included
@@ -210,6 +197,22 @@
         type, in that situation the system will try and satisfy the version number
         alone before falling back to the most recent file.
     </p>
+
+    <p>
+        An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">background</code> parameter can be included
+        when making a request. This will change the background color of the widget to accordingly. Warning though, this
+        will not update the font color, so black background will cause mostly unreadable text. For example:
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">background=green</span>
+            Sets the background as green
+        </li>
+        <li><span class="robot-mono b curse-orange">background=%23400</span>
+            Sets the background as #400 (a dark shade of red)
+        </li>
+    </ul>
+
+
     <h2 id="documentation:responses">Responses</h2>
     <p>
         Each request response is a JSON document containing either project data or
