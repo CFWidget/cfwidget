@@ -13,12 +13,12 @@ services:
       DB_DEBUG: "false"
       GIN_MODE: release
       DEBUG: "false"
-      CORE_KEY_FILE: "/run/secrets/core_key"
+      CORE_KEY_FILE: "/run/secrets/curse_key"
       WEB_HOSTNAME: "${WEB_HOST}"
       API_HOSTNAME: "${API_HOST}"
       CACHE_TTL: "1h"
     secrets:
-      - core_key
+      - curse_key
       - widget_db_pw
     networks:
       - default
@@ -50,7 +50,7 @@ services:
           - "node.role==manager"
 
 secrets:
-  core_key:
+  curse_key:
     external: true
   widget_db_pw:
     external: true

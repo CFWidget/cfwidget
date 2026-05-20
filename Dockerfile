@@ -1,9 +1,24 @@
-FROM golang:1.21-alpine AS builder
+FROM --platform=$BUILDPLATFORM tonistiigi/xx AS xx
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
+
+RUN apk add clang lld bash
+COPY --from=xx / /
+
+ENV CGO_ENABLED=1
+ENV CGO_CFLAGS="-D_LARGEFILE64_SOURCE"
 
 WORKDIR /cfwidget
+
+COPY go.mod go.sum ./
+RUN go mod download && go mod verify
+
 COPY . .
 
-RUN go build -o /go/bin/cfwidget github.com/cfwidget/cfwidget
+ARG TARGETPLATFORM
+
+RUN xx-apk add musl-dev gcc
+RUN xx-go build -buildvcs=false -o /go/bin/cfwidget github.com/cfwidget/cfwidget
+RUN xx-verify /go/bin/cfwidget
 
 FROM alpine
 
@@ -23,12 +38,7 @@ ENV DB_HOST="" \
     CORE_KEY="" \
     API_HOSTNAME="api.localhost:8080" \
     DEBUG="false" \
-    GIN_MODE="release" \
-    ELASTIC_APM_SERVER_URL="" \
-    ELASTIC_APM_SECRET_TOKEN="" \
-    ELASTIC_APM_API_KEY="" \
-    ELASTIC_APM_SERVICE_NAME="cfwidget" \
-    ELASTIC_APM_ENVIRONMENT="production"
+    GIN_MODE="release"
 
 ENTRYPOINT ["/go/bin/cfwidget"]
 CMD [""]
