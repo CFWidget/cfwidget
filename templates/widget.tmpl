@@ -10,7 +10,7 @@
 </head>
 <body class="bg-transparent">
 <div id="widget">
-    <div class="wrapper clearfix" style="--wrapper-bg-color: {{ .background }}">
+    <div class="wrapper clearfix {{ .borderClass }}" style="--wrapper-bg-color: {{ .background }}">
         <div class="thumb" style="background-image: url({{ .project.Thumbnail }});"></div>
         <div class="meta">
       <span class="line lead">

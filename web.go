@@ -183,11 +183,20 @@ func GetProject(c *gin.Context) {
 		} else {
 			downloads := messagePrinter.Sprintf("%d\n", properties.Downloads["total"])
 
+			var borderClass string
+			switch c.Query("border") {
+			case "none":
+				borderClass = "border-none"
+			default:
+				borderClass = "border-default"
+			}
+
 			buf := &bytes.Buffer{}
 			_ = templateEngine.ExecuteTemplate(buf, "widget.tmpl", gin.H{
 				"project":       properties,
 				"downloadCount": downloads,
 				"background":    c.DefaultQuery("background", "#fff"),
+				"borderClass":   borderClass,
 			})
 			data := buf.Bytes()
 
