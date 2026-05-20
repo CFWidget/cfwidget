@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   cfwidget:
-    image: ghcr.io/cfwidget/cfwidget
+    image: ghcr.io/cfwidget/cfwidget:${TAG}
     restart: always
     depends_on:
       - database
