@@ -138,34 +138,6 @@
       </pre>
     </p>
 
-    <h2 id="documentation:version">Images</h2>
-    <p>
-        The CurseForge Widget API is available over https at
-        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://{{.WEB_HOSTNAME}}</code>. An image representing
-        basic data of the project and the latest file is available by passing the project id and any
-        <a class="link curse-orange" href="#documentation:parameters">optional parameters</a>.
-    </p>
-
-    <p>
-        <code class="roboto-mono f6" style="word-break: break-all;">
-            <span class="b">GET</span> https://{{.WEB_HOSTNAME}}/32274.png
-        </code>
-    </p>
-    <p>
-        Extra parameters can be provided to alter the image being generated.
-    </p>
-    <ul class="list pa0">
-        <li><span class="robot-mono b curse-orange">dark</span>
-            Generates an image with a black background and white text
-        </li>
-        <li><span class="robot-mono b curse-orange">transparent</span>
-            Generates an image with the background being transparent instead of black/white
-        </li>
-        <li><span class="robot-mono b curse-orange">noThumbnail</span>
-            Removes the thumbnail from the resulting image.
-        </li>
-    </ul>
-
     <h2 id="documentation:version">Download</h2>
     <p>
         Each response includes a <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">download</code> object which
@@ -200,6 +172,20 @@
                     class="roboto-mono bg-light-gray f6 ph2 pv1 br2">2288310</code>.
         </li>
     </ul>
+    <p>
+        An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">background</code> parameter can be included
+        when making a request. This will change the background color of the widget to accordingly. Warning though, this
+        will not update the font color, so black background will cause mostly unreadable text. For example:
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">background=green</span>
+            Sets the background as green
+        </li>
+        <li><span class="robot-mono b curse-orange">background=%23400</span>
+            Sets the background as #400 (a dark shade of red)
+        </li>
+    </ul>
+
     <p>
         An optional <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">loader</code> parameter can be included
         when making a request. This will filter the download to only return a file who's versions also contain this
@@ -253,6 +239,35 @@
             occurred processing your request.
         </li>
     </ul>
+
+    <h2 id="documentation:version">Images</h2>
+    <p>
+        The CurseForge Widget API is available over https at
+        <code class="roboto-mono bg-light-gray f6 ph2 pv1 br2">https://{{.WEB_HOSTNAME}}</code>. An image representing
+        basic data of the project and the latest file is available by passing the project id and any
+        <a class="link curse-orange" href="#documentation:parameters">optional parameters</a>.
+    </p>
+
+    <p>
+        <code class="roboto-mono f6" style="word-break: break-all;">
+            <span class="b">GET</span> https://{{.WEB_HOSTNAME}}/32274.png
+        </code>
+    </p>
+    <p>
+        Extra parameters can be provided to alter the image being generated.
+    </p>
+    <ul class="list pa0">
+        <li><span class="robot-mono b curse-orange">dark</span>
+            Generates an image with a black background and white text
+        </li>
+        <li><span class="robot-mono b curse-orange">transparent</span>
+            Generates an image with the background being transparent instead of black/white
+        </li>
+        <li><span class="robot-mono b curse-orange">noThumbnail</span>
+            Removes the thumbnail from the resulting image.
+        </li>
+    </ul>
+
     <h2 id="documentation:data">Project Data</h2>
     <p>
         Data is served from a local database which is populated by extracting data
