@@ -23,7 +23,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker Tag
-        run:
+        run: |
           docker pull ghcr.io/${{ env.REPO }}:dev
           docker tag ghcr.io/${{ env.REPO }}:dev ghcr.io/${{ env.REPO }}:latest
           docker push ghcr.io/${{ env.REPO }}:latest
