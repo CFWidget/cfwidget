@@ -4,6 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/cfwidget/cfwidget/curseforge"
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/gin-contrib/cors"
@@ -11,12 +18,6 @@ import (
 	"go.elastic.co/apm/module/apmgin/v2"
 	"go.elastic.co/apm/v2"
 	"golang.org/x/sync/errgroup"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 var g errgroup.Group
@@ -85,10 +86,8 @@ func main() {
 
 		ScheduleAuthors()
 		for {
-			select {
-			case <-ticker.C:
-				ScheduleAuthors()
-			}
+			<-ticker.C
+			ScheduleAuthors()
 		}
 	}()
 

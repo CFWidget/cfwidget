@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/cfwidget/cfwidget/curseforge"
-	"github.com/cfwidget/cfwidget/env"
-	"github.com/cfwidget/cfwidget/widget"
-	"github.com/spf13/cast"
-	"gorm.io/gorm"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"runtime/debug"
+
+	"github.com/cfwidget/cfwidget/curseforge"
+	"github.com/cfwidget/cfwidget/env"
+	"github.com/cfwidget/cfwidget/widget"
+	"github.com/spf13/cast"
+	"gorm.io/gorm"
 )
 
 var syncProjectConsumer SyncProjectConsumer
@@ -25,7 +26,8 @@ var remoteUrlRegex = regexp.MustCompile("\"/linkout\\?remoteUrl=(?P<Url>\\S*)\""
 var NoProjectError = errors.New("no such project")
 var PrivateProjectError = errors.New("project private")
 
-var invalidVersions = []string{"Forge", "Fabric", "Quilt", "Rift"}
+// var invalidVersions = []string{"Forge", "Fabric", "Quilt", "Rift", "Client", "Server"}
+var VersionRegex = regexp.MustCompile(`^[0-9.]+$`)
 
 func SyncProject(id uint, ctx context.Context) (*widget.Project, error) {
 	//just directly perform the call, we want this one now
@@ -166,7 +168,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 		}
 
 		for _, g := range v.GameVersions {
-			if !contains(g, invalidVersions) {
+			if VersionRegex.Match([]byte(g)) {
 				file.Version = g
 				break
 			}
@@ -175,7 +177,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 		newProps.Files = append(newProps.Files, file)
 
 		for _, ver := range file.Versions {
-			if contains(ver, invalidVersions) {
+			if !VersionRegex.Match([]byte(ver)) {
 				continue
 			}
 			d, e := newProps.Versions[ver]
@@ -261,7 +263,7 @@ func getAddonProperties(id uint, ctx context.Context) (addon curseforge.Addon, e
 		return addon, PrivateProjectError
 	} else if response.StatusCode != 200 {
 		body, _ := io.ReadAll(response.Body)
-		return addon, errors.New(fmt.Sprintf("Error from CurseForge properties for id %d: %s (%d)", id, string(body), response.StatusCode))
+		return addon, fmt.Errorf("Error from CurseForge properties for id %d: %s (%d)", id, string(body), response.StatusCode)
 	}
 
 	var res curseforge.ProjectResponse
@@ -285,7 +287,7 @@ func getAddonDescription(id uint, ctx context.Context) (description string, err 
 		return "", PrivateProjectError
 	} else if response.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(response.Body)
-		return description, errors.New(fmt.Sprintf("Error from CurseForge description for id %d: %s (%d)", id, string(body), response.StatusCode))
+		return description, fmt.Errorf("Error from CurseForge description for id %d: %s (%d)", id, string(body), response.StatusCode)
 	}
 
 	var data curseforge.DescriptionResponse

@@ -5,17 +5,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"regexp"
+	"strings"
+
 	"github.com/cfwidget/cfwidget/curseforge"
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/spf13/cast"
 	"go.elastic.co/apm/v2"
-	"log"
-	"regexp"
-	"strings"
 )
 
 var addProjectConsumer AddProjectConsumer
-var FullPathWithId = regexp.MustCompile("[a-zA-Z\\-]+/[a-zA-Z\\-]+/([0-9]+)")
+var FullPathWithId = regexp.MustCompile(`[a-zA-Z\-]+/[a-zA-Z\-]+/([0-9]+)`)
 
 type AddProjectConsumer struct{}
 

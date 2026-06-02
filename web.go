@@ -5,6 +5,13 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"html/template"
+	"log"
+	"net/http"
+	"path/filepath"
+	"strings"
+	"time"
+
 	"github.com/cfwidget/cfwidget/env"
 	"github.com/cfwidget/cfwidget/widget"
 	"github.com/gin-gonic/gin"
@@ -13,11 +20,6 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"gorm.io/gorm"
-	"html/template"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type ApiWebResponse struct {
@@ -54,19 +56,25 @@ func RegisterApiRoutes(e *gin.Engine) {
 }
 
 func Resolve(c *gin.Context) {
-	path := strings.TrimSuffix(strings.TrimPrefix(c.Param("projectPath"), "/"), ".json")
+	path := filepath.Clean(c.Param("projectPath"))
+	if path == "." {
+		path = ""
+	}
+
+	path = strings.TrimSuffix(strings.TrimPrefix(path, "/"), ".json")
 	path = strings.TrimSuffix(path, ".png")
 
 	if path == "" {
 		//if this is not the web side of the fence, redirect to the web side of the fence
-		if c.Request.Host != env.Get("WEB_HOSTNAME") {
+		if env.Get("WEB_HOSTNAME") != "" && c.Request.Host != env.Get("WEB_HOSTNAME") {
 			c.Redirect(http.StatusTemporaryRedirect, "https://"+env.Get("WEB_HOSTNAME"))
 			return
 		} else {
 			buf := &bytes.Buffer{}
 			_ = templateEngine.ExecuteTemplate(buf, "documentation.tmpl", gin.H{
-				"WEB_HOSTNAME": env.Get("WEB_HOSTNAME"),
-				"API_HOSTNAME": env.Get("API_HOSTNAME"),
+				"WEB_HOSTNAME":   env.GetOr("WEB_HOSTNAME", c.Request.Host),
+				"API_HOSTNAME":   env.GetOr("API_HOSTNAME", c.Request.Host),
+				"BuyMeACoffeeId": env.Get("BUYMEACOFFEEID"),
 			})
 			data := buf.Bytes()
 
@@ -78,22 +86,28 @@ func Resolve(c *gin.Context) {
 		}
 	}
 
-	if path == "favicon.ico" {
+	if !filepath.IsLocal(path) {
+		c.AbortWithStatus(http.StatusTeapot)
+		return
+	}
+
+	switch path {
+	case "favicon.ico":
 		c.Data(http.StatusOK, "image/x-icon", faviconFile)
 		c.Abort()
 		return
-	} else if path == "css/app.css" {
+	case "css/app.css":
 		c.Data(http.StatusOK, "text/css", cssFile)
 		c.Abort()
 		return
-	} else if path == "service-worker.js" || path == "service-worker-dev.js" || path == "robots.txt" {
+	case "service-worker.js", "service-worker-dev.js", "robots.txt":
 		SetInCache(c.Request.URL.Host, c.Request.URL.RequestURI(), http.StatusNotFound, "", nil)
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
 
-	if strings.HasPrefix(path, AuthorPath) {
-		handleResolveAuthor(c, strings.TrimPrefix(path, AuthorPath))
+	if after, ok := strings.CutPrefix(path, AuthorPath); ok {
+		handleResolveAuthor(c, after)
 	} else {
 		handleResolveProject(c, path)
 	}
@@ -244,8 +258,8 @@ func handleResolveProject(c *gin.Context, path string) {
 
 	db = db.WithContext(ctx)
 
-	if strings.HasPrefix(path, "mc-mods/minecraft/") {
-		path = "minecraft/mc-mods/" + strings.TrimPrefix(path, "mc-mods/minecraft/")
+	if after, ok := strings.CutPrefix(path, "mc-mods/minecraft/"); ok {
+		path = "minecraft/mc-mods/" + after
 	}
 
 	lookup := &widget.ProjectLookup{Path: path}
@@ -360,7 +374,7 @@ func loaderMatches(loader string, versions []string) bool {
 
 func cacheHeaders(c *gin.Context, cacheExpireTime time.Time) {
 	maxAge := cacheTtl.Seconds()
-	age := cacheTtl.Seconds() - cacheExpireTime.Sub(time.Now()).Seconds()
+	age := cacheTtl.Seconds() - time.Until(cacheExpireTime).Seconds()
 
 	c.Header("Cache-Control", fmt.Sprintf("max-age=%.0f, public", maxAge))
 	c.Header("Age", fmt.Sprintf("%.0f", age))

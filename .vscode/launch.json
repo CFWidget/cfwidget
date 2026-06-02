@@ -15,9 +15,11 @@
                 "DB_PASS": "widget",
                 "DB_PASS_FILE": "",
                 "DB_DATABASE": "widget",
-                "GIN_MODE": "development",
+                "GIN_MODE": "debug",
                 "DB_MODE": "true",
-                "DEBUG": "true"
+                "DEBUG": "true",
+                "BUYMEACOFFEEID": "",
+                "CORE_KEY_FILE": "key"
             }
         }
     ]
