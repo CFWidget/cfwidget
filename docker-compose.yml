@@ -30,6 +30,11 @@ services:
         - "traefik.http.routers.${SERVICE_NAME}.entrypoints=websecure"
         - "traefik.http.routers.${SERVICE_NAME}.tls.certresolver=myresolver"
         - "traefik.http.services.${SERVICE_NAME}.loadbalancer.server.port=8080"
+      update_config:
+        order: start-first
+        monitor: 30s
+        delay: 10s
+        parallelism: 1
 
   database:
     image: mariadb:10.11
