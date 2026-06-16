@@ -90,7 +90,7 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 			panic(err)
 		}
 
-		return nil, err
+		return project, err
 	}
 
 	description, err := getAddonDescription(curseId, ctx)

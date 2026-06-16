@@ -292,7 +292,7 @@ func handleResolveProject(c *gin.Context, path string) {
 	project := &widget.Project{
 		CurseId: *lookup.CurseId,
 	}
-	err = db.First(&project).Error
+	err = db.First(project).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) || project.ParsedProjects == nil || project.UpdatedAt.Before(time.Now().Add(-1*time.Hour)) {
 		update, err := SyncProject(project.CurseId, ctx)
