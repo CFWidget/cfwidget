@@ -131,6 +131,9 @@ func (consumer *SyncProjectConsumer) Consume(curseId uint, ctx context.Context) 
 	newProps.Type = curseforge.GetPrimaryCategoryFor(categories, addon.PrimaryCategoryId).Name
 
 	newProps.Thumbnail = addon.Logo.ThumbnailUrl
+	if newProps.Thumbnail == "" { //if there isn't a thumbnail URL, defer to logo url. Matches CF
+		newProps.Thumbnail = addon.Logo.Url
+	}
 
 	for _, v := range addon.Authors {
 		newProps.Members = append(newProps.Members, widget.ProjectMember{
